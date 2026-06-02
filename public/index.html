@@ -18,12 +18,13 @@ import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, getDocs }
 // CONFIGURACIÓN FIREBASE — REEMPLAZAR CON TUS CREDENCIALES
 // ============================================================
 const firebaseConfig = {
-  apiKey:            "AIzaSyD0Vv2XWBkoqvOl7aDh-peVADCTY4JS1fo",
-  authDomain:        "flujo-fondos-agro.firebaseapp.com",
-  projectId:         "flujo-fondos-agro",
-  storageBucket:     "flujo-fondos-agro.firebasestorage.app",
-  messagingSenderId: "986498929267",
-  appId:             "1:986498929267:web:b74ebe1397fe04314b5006"
+  apiKey: "AIzaSyCxz0S9LPbgoH9DuSdDGfj8axggj_iPcmE",
+  authDomain: "flujo-fondos-agro-4d1c0.firebaseapp.com",
+  databaseURL: "https://flujo-fondos-agro-4d1c0-default-rtdb.firebaseio.com",
+  projectId: "flujo-fondos-agro-4d1c0",
+  storageBucket: "flujo-fondos-agro-4d1c0.firebasestorage.app",
+  messagingSenderId: "57453249036",
+  appId: "1:57453249036:web:f8016f33ee239e0f426429"
 };
 
 const app  = initializeApp(firebaseConfig);
@@ -428,7 +429,7 @@ body{font-family:'IBM Plex Sans',sans-serif;font-size:13px;background:var(--bg);
 // ============================================================
 // CONFIG
 // ============================================================
-const NETLIFY_BASE = "https://flujofondoagro.netlify.app"; // <-- ya lo tenés configurado
+const NETLIFY_BASE = "https://flujofondosagro.netlify.app"; // <-- ya lo tenés configurado
 const FN_AGRO = `${NETLIFY_BASE}/.netlify/functions/futuros-agro`;
 const FN_FIN  = `${NETLIFY_BASE}/.netlify/functions/futuros-financieros`;
 const FN_IOL  = `${NETLIFY_BASE}/.netlify/functions/futuros-iol`;
