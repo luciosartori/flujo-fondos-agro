@@ -1,0 +1,11 @@
+{
+  "name": "flujo-fondos-agropecuario",
+  "version": "1.0.0",
+  "description": "Flujo de fondos productor agropecuario 2026-2030",
+  "scripts": {
+    "dev": "netlify dev"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  }
+}

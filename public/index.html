@@ -1,0 +1,1820 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flujo de Fondos — Productor Agropecuario 2026–2030</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, getDocs }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+// ============================================================
+// CONFIGURACIÓN FIREBASE — REEMPLAZAR CON TUS CREDENCIALES
+// ============================================================
+const firebaseConfig = {
+  apiKey:            "AIzaSyD0Vv2XWBkoqvOl7aDh-peVADCTY4JS1fo",
+  authDomain:        "flujo-fondos-agro.firebaseapp.com",
+  projectId:         "flujo-fondos-agro",
+  storageBucket:     "flujo-fondos-agro.firebasestorage.app",
+  messagingSenderId: "986498929267",
+  appId:             "1:986498929267:web:b74ebe1397fe04314b5006"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+// Exponer globalmente para que el código no-module lo use
+window._fb = { auth, db, doc, setDoc, getDoc, onSnapshot, collection,
+               getDocs, signInWithEmailAndPassword, signOut, onAuthStateChanged };
+
+// Observar cambios de auth
+onAuthStateChanged(auth, user => {
+  window._currentUser = user;
+  if(user){
+    document.getElementById('loginOverlay').style.display='none';
+    document.getElementById('userInfo').textContent = user.email;
+    document.getElementById('logoutBtn').style.display='inline-flex';
+    window._loadFirestoreData();
+  } else {
+    document.getElementById('loginOverlay').style.display='flex';
+    document.getElementById('logoutBtn').style.display='none';
+  }
+});
+</script>
+<style>
+:root{
+  --bg:#F4F2ED;--bg2:#ECEAE3;--bg3:#E2DFD6;
+  --text:#1C1A14;--text2:#5A5648;--text3:#9A9285;
+  --border:#D4CFC4;--border2:#C2BCB0;
+  --green:#1A6B4A;--green-bg:#E4F0EB;
+  --red:#8B2020;--red-bg:#F5E8E8;
+  --amber:#7A4F0A;--amber-bg:#F5EDDA;
+  --blue:#1A3F7A;--blue-bg:#E4EBF5;
+  --soja:#1A6B4A;--maiz:#8B5E0A;--accent:#2C5F3E;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'IBM Plex Sans',sans-serif;font-size:13px;background:var(--bg);color:var(--text);line-height:1.5;}
+
+/* LOGIN OVERLAY */
+#loginOverlay{position:fixed;inset:0;background:rgba(28,26,20,.92);display:flex;align-items:center;justify-content:center;z-index:9999;}
+.login-box{background:var(--bg2);border:0.5px solid var(--border);border-radius:12px;padding:32px 36px;width:340px;box-shadow:0 8px 32px rgba(0,0,0,.3);}
+.login-box h2{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;margin-bottom:4px;letter-spacing:.04em;}
+.login-box p{font-size:11px;color:var(--text3);margin-bottom:20px;font-family:'IBM Plex Mono',monospace;}
+.login-field{margin-bottom:12px;}
+.login-field label{display:block;font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em;}
+.login-field input{width:100%;padding:8px 10px;border:0.5px solid var(--border);border-radius:6px;font-size:13px;font-family:'IBM Plex Mono',monospace;background:var(--bg);color:var(--text);}
+.login-field input:focus{outline:none;border-color:var(--accent);}
+.login-btn{width:100%;padding:9px;background:var(--text);color:var(--bg);border:none;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;cursor:pointer;margin-top:4px;letter-spacing:.04em;transition:opacity .15s;}
+.login-btn:hover{opacity:.85;}
+.login-error{font-size:11px;color:var(--red);margin-top:8px;font-family:'IBM Plex Mono',monospace;display:none;}
+.save-indicator{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#888;display:flex;align-items:center;gap:5px;padding:4px 10px;border:0.5px solid #333;border-radius:4px;background:#1A1A1A;}
+.save-indicator.saving{color:#EAB308;}
+.save-indicator.saved{color:#22C55E;}
+.save-indicator.error{color:#EF4444;}
+
+/* HEADER */
+.header{background:var(--text);color:var(--bg);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.header-title{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;letter-spacing:.03em;}
+.header-sub{font-size:10px;color:#9A9285;margin-top:2px;font-family:'IBM Plex Mono',monospace;}
+.header-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.export-btn{background:transparent;border:0.5px solid rgba(255,255,255,.25);color:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:6px 12px;border-radius:5px;cursor:pointer;letter-spacing:.04em;transition:background .15s;}
+.export-btn:hover{background:rgba(255,255,255,.1);}
+#logoutBtn{display:none;background:transparent;border:0.5px solid rgba(255,255,255,.2);color:#9A9285;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:4px 10px;border-radius:4px;cursor:pointer;}
+#logoutBtn:hover{background:rgba(255,255,255,.08);}
+#userInfo{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#555;}
+
+/* TC PANEL */
+.tc-panel{background:#111;border-bottom:0.5px solid #333;padding:8px 24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.tc-item{display:flex;align-items:center;gap:6px;padding:5px 10px;border:0.5px solid #333;border-radius:5px;background:#1A1A1A;}
+.tc-item .tl{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#888;line-height:1.3;}
+.tc-item .tv{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:#E8E4DC;}
+.tc-item .ts{font-size:9px;color:#555;}
+.tc-item input[type=number]{width:90px;font-size:13px;font-family:'IBM Plex Mono',monospace;padding:3px 7px;border:0.5px solid #444;border-radius:4px;background:#222;color:#E8E4DC;font-weight:600;}
+.tc-item input:focus{outline:none;border-color:#666;}
+.tc-divider{width:0.5px;height:28px;background:#333;margin:0 4px;}
+.status-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px;}
+.status-dot.live{background:#22C55E;animation:pulse 2s infinite;}
+.status-dot.stale{background:#EAB308;}
+.status-dot.error{background:#EF4444;}
+.status-dot.loading{background:#888;animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+.refresh-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:4px 9px;border:0.5px solid #444;border-radius:4px;cursor:pointer;background:#222;color:#888;letter-spacing:.04em;transition:all .15s;}
+.refresh-btn:hover{background:#333;color:#CCC;}
+.last-update{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#555;}
+
+/* MAIN */
+.main{padding:16px 24px;max-width:1600px;margin:0 auto;}
+.stock-row{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.stock-card{flex:1;min-width:200px;background:var(--bg2);border:0.5px solid var(--border);border-radius:8px;padding:11px 14px;}
+.stock-card h4{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px;}
+.stock-track{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin:4px 0;}
+.stock-fill{height:100%;border-radius:3px;transition:width .4s ease;}
+.stock-fill.soja{background:var(--soja);}
+.stock-fill.maiz{background:var(--maiz);}
+.stock-nums{display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3);margin-top:3px;}
+.stock-nums b{color:var(--text);}
+.alert-deficit{background:var(--red-bg);border:0.5px solid #E0AAAA;border-radius:6px;padding:8px 12px;margin-bottom:6px;font-size:12px;color:var(--red);display:flex;gap:8px;align-items:flex-start;}
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px;margin-bottom:14px;}
+.metric{background:var(--bg2);border:0.5px solid var(--border);border-radius:8px;padding:10px 12px;}
+.metric .ml{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;}
+.metric .mv{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;}
+.mv.pos{color:var(--green);}.mv.neg{color:var(--red);}.mv.warn{color:var(--amber);}
+.tabs{display:flex;gap:0;margin-bottom:14px;border-bottom:0.5px solid var(--border);flex-wrap:wrap;}
+.tab{padding:7px 14px;font-size:11px;font-family:'IBM Plex Mono',monospace;border:none;border-bottom:2px solid transparent;cursor:pointer;background:transparent;color:var(--text3);letter-spacing:.04em;margin-bottom:-0.5px;transition:color .15s;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
+.section{border:0.5px solid var(--border);border-radius:8px;margin-bottom:10px;overflow:hidden;}
+.section-header{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;background:var(--bg2);cursor:pointer;user-select:none;transition:background .15s;}
+.section-header:hover{background:var(--bg3);}
+.section-header h3{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:7px;text-transform:uppercase;letter-spacing:.06em;}
+.stotals{display:flex;gap:12px;font-size:11px;font-family:'IBM Plex Mono',monospace;align-items:center;}
+.stotals span{color:var(--text3);}
+.stotals b{color:var(--text);}
+.section-body{padding:11px 13px;display:none;}
+.section-body.open{display:block;}
+.sub-table{width:100%;border-collapse:collapse;font-size:12px;}
+.sub-table th{text-align:left;font-weight:600;font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--text3);padding:4px 6px;border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.06em;}
+.sub-table td{padding:5px 6px;border-bottom:0.5px solid var(--border);vertical-align:middle;}
+.sub-table tr:last-child td{border-bottom:none;}
+.sub-table td input[type=number],.sub-table td input[type=text]{width:100%;font-size:12px;font-family:'IBM Plex Mono',monospace;padding:3px 6px;border:0.5px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);}
+.sub-table td input:focus{outline:none;border-color:var(--accent);}
+.add-row-btn{margin-top:7px;font-size:11px;font-family:'IBM Plex Mono',monospace;padding:4px 9px;border:0.5px dashed var(--border2);border-radius:5px;cursor:pointer;background:transparent;color:var(--text3);display:inline-flex;align-items:center;gap:4px;transition:all .15s;}
+.add-row-btn:hover{background:var(--bg3);color:var(--text);}
+.del-btn{background:none;border:none;cursor:pointer;color:var(--text3);padding:2px 4px;font-size:13px;border-radius:3px;transition:all .15s;}
+.del-btn:hover{color:var(--red);background:var(--red-bg);}
+.month-nav{display:flex;align-items:center;gap:7px;margin-bottom:13px;flex-wrap:wrap;}
+.month-nav button{padding:5px 11px;font-size:11px;font-family:'IBM Plex Mono',monospace;border:0.5px solid var(--border);border-radius:5px;cursor:pointer;background:var(--bg2);color:var(--text);transition:background .15s;}
+.month-nav button:hover{background:var(--bg3);}
+.month-nav select{font-size:12px;font-family:'IBM Plex Mono',monospace;padding:4px 7px;border:0.5px solid var(--border);border-radius:5px;background:var(--bg2);color:var(--text);}
+.cur-month{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;min-width:155px;text-align:center;}
+.badge{font-size:9px;font-family:'IBM Plex Mono',monospace;padding:2px 5px;border-radius:3px;margin-left:3px;font-weight:600;letter-spacing:.03em;}
+.badge.auto{background:var(--green-bg);color:var(--green);}
+.badge.manual{background:var(--amber-bg);color:var(--amber);}
+.badge.live{background:#DCFCE7;color:#166534;}
+.badge.auto-mode{background:var(--blue-bg);color:var(--blue);}
+.badge.manual-mode{background:var(--amber-bg);color:var(--amber);}
+.flow-table-wrap{overflow-x:auto;margin-bottom:12px;position:relative;}
+/* Barra de scroll inferior visible y estilizada */
+.flow-table-wrap::-webkit-scrollbar{height:8px;}
+.flow-table-wrap::-webkit-scrollbar-track{background:var(--bg3);border-radius:4px;}
+.flow-table-wrap::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
+.flow-table-wrap::-webkit-scrollbar-thumb:hover{background:var(--text3);}
+/* Firefox */
+.flow-table-wrap{scrollbar-width:thin;scrollbar-color:var(--border2) var(--bg3);}
+
+/* Barra de scroll horizontal fija en el fondo de la pantalla — solo visible cuando hay tabla ancha */
+#scrollBar{
+  position:fixed;
+  bottom:0;left:0;right:0;
+  height:14px;
+  background:var(--bg2);
+  border-top:0.5px solid var(--border);
+  overflow-x:auto;
+  overflow-y:hidden;
+  z-index:500;
+  display:none;
+}
+#scrollBarInner{height:1px;}
+#scrollBar::-webkit-scrollbar{height:8px;}
+#scrollBar::-webkit-scrollbar-track{background:var(--bg3);}
+#scrollBar::-webkit-scrollbar-thumb{background:var(--accent);border-radius:4px;}
+#scrollBar::-webkit-scrollbar-thumb:hover{background:var(--text);}
+#scrollBar{scrollbar-width:thin;scrollbar-color:var(--accent) var(--bg3);}
+.flow-table{width:100%;border-collapse:collapse;font-size:11px;min-width:900px;}
+.flow-table th{text-align:center;font-weight:600;font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--text3);padding:4px 5px;border-bottom:0.5px solid var(--border);white-space:nowrap;text-transform:uppercase;letter-spacing:.05em;background:var(--bg2);}
+.flow-table th:first-child{text-align:left;min-width:160px;}
+.flow-table td{padding:4px 5px;border-bottom:0.5px solid var(--border);text-align:right;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:11px;}
+.flow-table td:first-child{text-align:left;font-family:'IBM Plex Sans',sans-serif;color:var(--text2);}
+.flow-table tr.subtotal td{background:var(--bg2);font-weight:600;}
+.flow-table tr.grandtotal td{background:var(--bg3);font-weight:600;font-size:12px;border-top:0.5px solid var(--border2);}
+.flow-table tr.pos-total td:not(:first-child){color:var(--green);}
+.flow-table tr.neg-total td:not(:first-child){color:var(--red);}
+.flow-table td.deficit{color:var(--red);font-weight:600;}
+.ov-input{width:76px;font-size:11px;font-family:'IBM Plex Mono',monospace;padding:3px 5px;border:0.5px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);}
+.ov-input:focus{outline:none;border-color:var(--accent);}
+.info-note{font-size:11px;color:var(--text3);margin:3px 0 7px;display:flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;}
+.year-mini{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:6px;margin-top:10px;}
+.year-mini .metric{padding:8px 10px;}
+.year-mini .mv{font-size:13px;}
+.chart-wrap{position:relative;width:100%;height:260px;margin-top:14px;}
+.chart-legend{display:flex;gap:14px;margin-top:8px;font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace;}
+.chart-legend span{display:flex;align-items:center;gap:5px;}
+.legend-dot{width:10px;height:10px;border-radius:2px;}
+.precios-panel{background:var(--bg2);border:0.5px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:14px;}
+.precios-panel h4{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.precios-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px;}
+.precio-item{background:var(--bg);border:0.5px solid var(--border);border-radius:6px;padding:7px 9px;}
+.precio-item .pi-mes{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;}
+.precio-item .pi-val{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:var(--text);margin-top:1px;}
+.precio-item .pi-src{font-size:9px;color:var(--text3);margin-top:2px;}
+.precio-item.live-price{border-color:var(--green);background:var(--green-bg);}
+.precio-item.live-price .pi-val{color:var(--green);}
+/* readonly overlay para usuarios no logueados */
+.readonly-mask{pointer-events:none;opacity:.6;}
+.readonly-banner{background:var(--amber-bg);border:0.5px solid var(--border2);border-radius:6px;padding:8px 14px;font-size:12px;color:var(--amber);font-family:'IBM Plex Mono',monospace;margin-bottom:12px;display:none;}
+
+/* VENTAS REALES */
+.venta-real-row{background:var(--green-bg);border-bottom:0.5px solid var(--border);}
+.venta-real-row td{color:var(--green);font-weight:500;}
+.venta-proyectada-row{opacity:.7;}
+.stock-edit-input{width:110px;font-size:13px;font-family:'IBM Plex Mono',monospace;padding:4px 8px;border:0.5px solid var(--border);border-radius:5px;background:var(--bg);color:var(--text);font-weight:600;}
+.stock-edit-input:focus{outline:none;border-color:var(--accent);}
+.modal-overlay{position:fixed;inset:0;background:rgba(28,26,20,.7);display:flex;align-items:center;justify-content:center;z-index:8888;}
+.modal-box{background:var(--bg2);border:0.5px solid var(--border);border-radius:10px;padding:24px 28px;width:400px;box-shadow:0 8px 32px rgba(0,0,0,.2);}
+.modal-box h3{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:16px;}
+.modal-field{margin-bottom:12px;}
+.modal-field label{display:block;font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+.modal-field input,.modal-field select{width:100%;padding:7px 10px;border:0.5px solid var(--border);border-radius:5px;font-size:13px;font-family:'IBM Plex Mono',monospace;background:var(--bg);color:var(--text);}
+.modal-field input:focus,.modal-field select:focus{outline:none;border-color:var(--accent);}
+.modal-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end;}
+.modal-btn{padding:7px 16px;font-size:12px;font-family:'IBM Plex Mono',monospace;border-radius:5px;cursor:pointer;letter-spacing:.04em;font-weight:600;transition:all .15s;}
+.modal-btn.primary{background:var(--text);color:var(--bg);border:none;}
+.modal-btn.primary:hover{opacity:.85;}
+.modal-btn.secondary{background:transparent;color:var(--text2);border:0.5px solid var(--border);}
+.modal-btn.secondary:hover{background:var(--bg3);}
+.historial-badge{font-size:9px;font-family:'IBM Plex Mono',monospace;padding:2px 6px;border-radius:3px;font-weight:600;}
+.historial-badge.real{background:var(--green-bg);color:var(--green);}
+.historial-badge.proyectado{background:var(--blue-bg);color:var(--blue);}
+.tab-sub{display:flex;gap:4px;margin-bottom:12px;}
+.tab-sub button{padding:5px 12px;font-size:11px;font-family:'IBM Plex Mono',monospace;border:0.5px solid var(--border);border-radius:5px;cursor:pointer;background:var(--bg2);color:var(--text3);transition:all .15s;}
+.tab-sub button.active{background:var(--text);color:var(--bg);border-color:var(--text);}
+.confirm-venta-btn{font-size:11px;font-family:'IBM Plex Mono',monospace;padding:4px 10px;border:0.5px solid var(--green);border-radius:4px;cursor:pointer;background:var(--green-bg);color:var(--green);white-space:nowrap;transition:all .15s;}
+.confirm-venta-btn:hover{background:var(--green);color:white;}
+
+/* FLUJO DE CAJA DIARIO */
+.caja-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;}
+.caja-saldo-panel{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.saldo-card{flex:1;min-width:160px;background:var(--bg2);border:0.5px solid var(--border);border-radius:8px;padding:10px 14px;}
+.saldo-card h5{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
+.saldo-card .saldo-val{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:600;}
+.saldo-card input{width:100%;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;padding:3px 6px;border:0.5px solid var(--border);border-radius:5px;background:var(--bg);color:var(--text);margin-top:2px;}
+.saldo-card input:focus{outline:none;border-color:var(--accent);}
+.caja-day{border:0.5px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden;}
+.caja-day-header{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;cursor:pointer;user-select:none;transition:background .15s;}
+.caja-day-header:hover{background:var(--bg3);}
+.caja-day-header.hoy{background:var(--text);color:var(--bg);}
+.caja-day-header.hoy .caja-day-label{color:var(--bg);}
+.caja-day-header.hoy .caja-day-saldo{color:#7ECFA8;}
+.caja-day-header.tiene-movs{background:var(--bg2);}
+.caja-day-header.deficit-dia .caja-day-saldo{color:var(--red)!important;}
+.caja-day-label{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px;}
+.caja-day-label .dia-num{font-size:18px;font-weight:600;min-width:28px;}
+.caja-day-label .dia-nombre{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;}
+.caja-day-header.hoy .dia-nombre{color:#9A9285;}
+.caja-day-badges{display:flex;gap:5px;align-items:center;flex-wrap:wrap;}
+.caja-badge{font-size:9px;font-family:'IBM Plex Mono',monospace;padding:2px 6px;border-radius:3px;font-weight:600;}
+.caja-badge.vto{background:var(--red-bg);color:var(--red);}
+.caja-badge.ingreso{background:var(--green-bg);color:var(--green);}
+.caja-badge.gasto{background:var(--amber-bg);color:var(--amber);}
+.caja-day-saldo{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;text-align:right;}
+.caja-day-saldo .saldo-usd{font-size:10px;color:var(--text3);margin-top:1px;}
+.caja-day-body{display:none;padding:10px 14px;border-top:0.5px solid var(--border);background:var(--bg);}
+.caja-day-body.open{display:block;}
+.caja-mov-group{margin-bottom:10px;}
+.caja-mov-group-title{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:5px;padding-bottom:3px;border-bottom:0.5px solid var(--border);}
+.caja-mov-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;font-size:12px;border-bottom:0.5px solid var(--border);gap:8px;}
+.caja-mov-row:last-child{border-bottom:none;}
+.caja-mov-concepto{flex:1;color:var(--text2);display:flex;align-items:center;gap:6px;}
+.caja-mov-concepto .mov-tag{font-size:9px;font-family:'IBM Plex Mono',monospace;padding:1px 5px;border-radius:3px;}
+.caja-mov-concepto .mov-tag.banco{background:var(--blue-bg);color:var(--blue);}
+.caja-mov-concepto .mov-tag.egreso{background:var(--amber-bg);color:var(--amber);}
+.caja-mov-concepto .mov-tag.ingreso{background:var(--green-bg);color:var(--green);}
+.caja-mov-monto{font-family:'IBM Plex Mono',monospace;font-weight:500;white-space:nowrap;}
+.caja-mov-monto.neg{color:var(--red);}
+.caja-mov-monto.pos{color:var(--green);}
+.caja-add-mov{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center;}
+.caja-add-mov input,.caja-add-mov select{font-size:11px;font-family:'IBM Plex Mono',monospace;padding:4px 7px;border:0.5px solid var(--border);border-radius:4px;background:var(--bg2);color:var(--text);}
+.caja-add-mov input:focus,.caja-add-mov select:focus{outline:none;border-color:var(--accent);}
+.caja-add-btn{font-size:11px;font-family:'IBM Plex Mono',monospace;padding:4px 10px;border:0.5px solid var(--accent);border-radius:4px;cursor:pointer;background:var(--green-bg);color:var(--green);transition:all .15s;}
+.caja-add-btn:hover{background:var(--green);color:white;}
+.caja-semaforo{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.caja-semaforo.ok{background:#22C55E;}
+.caja-semaforo.warn{background:#EAB308;}
+.caja-semaforo.rojo{background:#EF4444;}
+.cuota-fecha-input{width:120px;font-size:11px;font-family:'IBM Plex Mono',monospace;padding:3px 6px;border:0.5px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);}
+.cuota-fecha-input:focus{outline:none;border-color:var(--accent);}
+.caja-necesita-venta{background:var(--amber-bg);border:0.5px solid #D4A853;border-radius:6px;padding:7px 12px;font-size:11px;color:var(--amber);font-family:'IBM Plex Mono',monospace;margin-top:6px;display:flex;align-items:center;gap:6px;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN OVERLAY -->
+<div id="loginOverlay" style="display:none;">
+  <div class="login-box">
+    <h2>FLUJO DE FONDOS</h2>
+    <p>PRODUCTOR AGROPECUARIO 2026–2030</p>
+    <div class="login-field">
+      <label>Email</label>
+      <input type="email" id="loginEmail" placeholder="usuario@email.com" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="login-field">
+      <label>Contraseña</label>
+      <input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" onclick="doLogin()">INGRESAR</button>
+    <div class="login-error" id="loginError"></div>
+    <div style="margin-top:16px;text-align:center;">
+      <button onclick="viewReadOnly()" style="background:none;border:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3);cursor:pointer;text-decoration:underline;">Ver sin editar (solo lectura)</button>
+    </div>
+  </div>
+</div>
+
+<header class="header">
+  <div>
+    <div class="header-title">FLUJO DE FONDOS — PRODUCTOR AGROPECUARIO</div>
+    <div class="header-sub">MAYO 2026 → MAYO 2030 · SOJA 3.622,75 TN · MAÍZ 3.927 TN</div>
+  </div>
+  <div class="header-right">
+    <span id="userInfo"></span>
+    <div class="save-indicator" id="saveIndicator">● LISTO</div>
+    <button class="export-btn" onclick="exportCSV()">↓ CSV</button>
+    <button id="logoutBtn" onclick="doLogout()">SALIR</button>
+  </div>
+</header>
+
+<div class="tc-panel" id="tcPanel">
+  <div class="tc-item">
+    <div><div class="tl">TC MINORISTA VENDEDOR BNA</div><div class="ts">Cuotas USD → ARS</div></div>
+    <div class="tv" id="tcMinDisplay">–</div>
+    <span class="status-dot loading" id="dotMin"></span>
+  </div>
+  <div class="tc-divider"></div>
+  <div class="tc-item">
+    <div><div class="tl">TC MAYORISTA COMPRADOR BNA</div><div class="ts">Granos USD → ARS</div></div>
+    <div class="tv" id="tcMayDisplay">–</div>
+    <span class="status-dot loading" id="dotMay"></span>
+  </div>
+  <div class="tc-divider"></div>
+  <div class="tc-item" style="flex-direction:column;align-items:flex-start;gap:3px;">
+    <div class="tl">OVERRIDE MANUAL TC</div>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <span style="font-size:10px;color:#888;">Min:</span>
+      <input type="number" id="tcMinOv" placeholder="auto" step="10" min="1" oninput="onTcOverride()">
+      <span style="font-size:10px;color:#888;">May:</span>
+      <input type="number" id="tcMayOv" placeholder="auto" step="10" min="1" oninput="onTcOverride()">
+      <button onclick="clearTcOverride()" class="refresh-btn">LIMPIAR</button>
+    </div>
+  </div>
+  <div class="tc-divider"></div>
+  <button class="refresh-btn" onclick="fetchAllData()">↻ ACTUALIZAR</button>
+  <div class="last-update" id="lastUpdate">–</div>
+</div>
+
+<div class="main">
+  <div class="readonly-banner" id="readonlyBanner">👁 MODO SOLO LECTURA — Los cambios no se guardan. <a href="#" onclick="document.getElementById('loginOverlay').style.display='flex';return false;" style="color:var(--amber);">Iniciá sesión para editar.</a></div>
+
+<!-- MODAL REGISTRO VENTA REAL -->
+<div class="modal-overlay" id="modalVenta" style="display:none;">
+  <div class="modal-box">
+    <h3>REGISTRAR VENTA REAL</h3>
+    <div class="modal-field">
+      <label>Grano</label>
+      <select id="mvGrano">
+        <option value="soja">SOJA</option>
+        <option value="maiz">MAÍZ</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>Fecha de venta</label>
+      <input type="date" id="mvFecha">
+    </div>
+    <div class="modal-field">
+      <label>Toneladas vendidas</label>
+      <input type="number" id="mvToneladas" step="0.01" min="0.01" placeholder="ej: 250.50">
+    </div>
+    <div class="modal-field">
+      <label>Precio de venta (U$S/tn)</label>
+      <input type="number" id="mvPrecio" step="0.01" min="0" placeholder="ej: 338.00">
+    </div>
+    <div class="modal-field">
+      <label>Observación (opcional)</label>
+      <input type="text" id="mvObs" placeholder="ej: Canje por insumos, flete propio...">
+    </div>
+    <div id="mvResumen" style="background:var(--bg3);border-radius:6px;padding:8px 12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text2);margin-top:4px;display:none;"></div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeModalVenta()">CANCELAR</button>
+      <button class="modal-btn primary" onclick="confirmarVenta()">REGISTRAR VENTA</button>
+    </div>
+  </div>
+</div>
+  <div class="stock-row" id="stockBar"></div>
+  <div id="alertasDeficit"></div>
+  <div class="summary-grid" id="summaryGrid"></div>
+  <div class="tabs">
+    <button class="tab active" onclick="setTab('mensual')">VISTA MENSUAL</button>
+    <button class="tab" onclick="setTab('anual')">VISTA ANUAL</button>
+    <button class="tab" onclick="setTab('flujo')">TABLA FLUJO</button>
+    <button class="tab" onclick="setTab('granos')">MÓDULO GRANOS</button>
+    <button class="tab" onclick="setTab('historial')">VENTAS REALIZADAS</button>
+    <button class="tab" onclick="setTab('creditos')">CUOTAS CREDITICIAS</button>
+    <button class="tab" onclick="setTab('egresos')">MÓDULOS DE EGRESOS</button>
+    <button class="tab" onclick="setTab('caja')">FLUJO DE CAJA</button>
+    <button class="tab" onclick="setTab('precios')">PRECIOS EN VIVO</button>
+  </div>
+  <div id="tabContent"></div>
+</div>
+
+<!-- BARRA DE SCROLL HORIZONTAL FIJA EN EL FONDO -->
+<div id="scrollBar"><div id="scrollBarInner"></div></div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const NETLIFY_BASE = "https://flujofondoagro.netlify.app"; // <-- ya lo tenés configurado
+const FN_AGRO = `${NETLIFY_BASE}/.netlify/functions/futuros-agro`;
+const FN_FIN  = `${NETLIFY_BASE}/.netlify/functions/futuros-financieros`;
+const FN_IOL  = `${NETLIFY_BASE}/.netlify/functions/futuros-iol`;
+const API_TC  = "https://dolarapi.com/v1/dolares";
+
+// ============================================================
+// ESTADO
+// ============================================================
+const MONTHS=[];
+(()=>{let d=new Date(2026,4,1);const e=new Date(2030,5,1);while(d<=e){MONTHS.push({y:d.getFullYear(),m:d.getMonth(),key:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`});d.setMonth(d.getMonth()+1);}})();
+const MN=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+// Stock inicial — editable por el usuario
+let STOCK_INICIAL={soja:3622.75,maiz:3927};
+
+// Ventas reales confirmadas: [{id, grano, fecha, mes(YYYY-MM), toneladas, precio_usd, obs, registradoPor, registradoEn}]
+let ventasReales=[];
+
+let tcLive={min:null,may:null};
+let tcOverride={min:null,may:null};
+let grainLive={soja:{},maiz:{}};
+let grainOverride={soja:{},maiz:{}};
+let dolarFuturo={};
+let dataStatus={tc:'loading',granos:'loading',fin:'loading'};
+let currentMonthIdx=0,currentTab='mensual';
+let isReadOnly=false;
+let saveTimer=null;
+
+const FALLBACK_SOJA={'2026-06':0,'2026-07':335,'2026-09':337.7,'2026-11':343,'2027-01':0,'2027-05':336,'2027-07':345};
+const FALLBACK_MAIZ={'2026-07':168,'2026-09':170,'2026-11':172,'2027-01':174,'2027-03':176,'2027-05':178};
+
+// ============================================================
+// DATOS CREDITICIOS
+// ============================================================
+const LOANS_DEFAULT=[
+  {id:'l1',banco:'BANCO NACION',concepto:'CAP. TRAJ',mes:'2026-02',monto_ars:14528,monto_usd:null},
+  {id:'l2',banco:'BANCO NACION',concepto:'CAP. TRAJ',mes:'2026-04',monto_ars:4554528,monto_usd:null},
+  {id:'l3',banco:'BANCO NACION',concepto:'1° CUOTA JACTO',mes:'2026-04',monto_ars:null,monto_usd:26637},
+  {id:'l4',banco:'BANCO CREDICOOP',concepto:'Cuota',mes:'2026-05',monto_ars:1000,monto_usd:107500},
+  {id:'l5',banco:'MAIZE-LUSSO',concepto:'Cuota',mes:'2026-06',monto_ars:895173,monto_usd:null},
+  {id:'l6',banco:'BOLSA DE MAIZ ACA',concepto:'Cuota',mes:'2026-07',monto_ars:null,monto_usd:null},
+  {id:'l7',banco:'BANCO NACION',concepto:'TRACTOR',mes:'2026-08',monto_ars:104827,monto_usd:null},
+  {id:'l8',banco:'BANCO MACRO',concepto:'Cuota',mes:'2026-09',monto_ars:33859120,monto_usd:98130},
+  {id:'l9',banco:'BANCO MACRO',concepto:'Cuota',mes:'2026-09',monto_ars:null,monto_usd:51110},
+  {id:'l10',banco:'BANCO NACION',concepto:'CAP. TRAJ',mes:'2026-10',monto_ars:null,monto_usd:null},
+  {id:'l11',banco:'BANCO NACION',concepto:'2° CUOTA JACTO',mes:'2026-10',monto_ars:null,monto_usd:25444},
+  {id:'l12',banco:'BANCO MACRO',concepto:'Cuota',mes:'2026-12',monto_ars:104827,monto_usd:177670},
+  {id:'l13',banco:'BANCO MACRO',concepto:'JAM&JAM',mes:'2026-12',monto_ars:null,monto_usd:null},
+  {id:'l14',banco:'BANCO NACION',concepto:'TRACTOR',mes:'2027-02',monto_ars:35641180,monto_usd:null},
+  {id:'l15',banco:'BANCO NACION',concepto:'CAP. TRAJ',mes:'2027-04',monto_ars:null,monto_usd:33563},
+  {id:'l16',banco:'BANCO NACION',concepto:'3° CUOTA JACTO',mes:'2027-04',monto_ars:null,monto_usd:24901},
+  {id:'l17',banco:'BANCO NACION',concepto:'TRACTOR',mes:'2027-08',monto_ars:null,monto_usd:null},
+  {id:'l18',banco:'BANCO NACION',concepto:'CAP. TRAJ',mes:'2027-10',monto_ars:null,monto_usd:31720},
+  {id:'l19',banco:'BANCO NACION',concepto:'4° CUOTA JACTO',mes:'2027-10',monto_ars:null,monto_usd:24569},
+  {id:'l20',banco:'BANCO NACION',concepto:'TRACTOR',mes:'2028-02',monto_ars:null,monto_usd:null},
+  {id:'l21',banco:'BANCO NACION',concepto:'CAP. TRAJ',mes:'2028-04',monto_ars:null,monto_usd:29855},
+  {id:'l22',banco:'BANCO NACION',concepto:'5° CUOTA JACTO',mes:'2028-04',monto_ars:null,monto_usd:23677},
+  {id:'l23',banco:'BANCO NACION',concepto:'TRACTOR',mes:'2028-08',monto_ars:null,monto_usd:null},
+  {id:'l24',banco:'BANCO NACION',concepto:'6° CUOTA JACTO',mes:'2028-10',monto_ars:null,monto_usd:23539},
+  {id:'l25',banco:'BANCO NACION',concepto:'TRACTOR',mes:'2029-02',monto_ars:null,monto_usd:null},
+  {id:'l26',banco:'BANCO NACION',concepto:'TRACTOR',mes:'2029-08',monto_ars:null,monto_usd:null},
+  {id:'l27',banco:'BANCO NACION',concepto:'Cuota',mes:'2026-04',monto_ars:37250,monto_usd:null},
+  {id:'l28',banco:'BANCO NACION',concepto:'Cuota',mes:'2026-04',monto_ars:37355,monto_usd:null},
+  {id:'l29',banco:'MatbaRofex',concepto:'Cuota',mes:'2026-04',monto_ars:null,monto_usd:31200},
+  {id:'l30',banco:'MatbaRofex',concepto:'Cuota',mes:'2026-04',monto_ars:null,monto_usd:26277},
+  {id:'l31',banco:'BANCO NACION',concepto:'Cuota',mes:'2026-04',monto_ars:83288,monto_usd:null},
+  {id:'l32',banco:'MatbaRofex',concepto:'Cuota',mes:'2026-04',monto_ars:null,monto_usd:25721},
+  {id:'l33',banco:'MatbaRofex',concepto:'Cuota',mes:'2026-04',monto_ars:null,monto_usd:25144},
+  {id:'l34',banco:'MatbaRofex',concepto:'Cuota',mes:'2026-04',monto_ars:null,monto_usd:24599},
+  {id:'l35',banco:'MatbaRofex',concepto:'Cuota',mes:'2026-04',monto_ars:null,monto_usd:24040},
+  {id:'l36',banco:'MatbaRofex',concepto:'Cuota',mes:'2026-04',monto_ars:null,monto_usd:23495},
+  {id:'l37',banco:'MatbaRofex',concepto:'Cuota',mes:'2026-04',monto_ars:null,monto_usd:22934},
+  {id:'l38',banco:'BANCO NACION',concepto:'CAP. TRAJ',mes:'2026-04',monto_ars:null,monto_usd:35261},
+  {id:'l39',banco:'BANCO NACION',concepto:'JACTO (2)',mes:'2026-04',monto_ars:null,monto_usd:null},
+  {id:'l40',banco:'BANCO NACION',concepto:'Cuota jun-26',mes:'2026-06',monto_ars:null,monto_usd:null},
+  {id:'l41',banco:'BANCO NACION',concepto:'Cuota ago-26',mes:'2026-08',monto_ars:null,monto_usd:null},
+  {id:'l42',banco:'BANCO MACRO',concepto:'CAP. TRAJ oct-26',mes:'2026-10',monto_ars:null,monto_usd:35509},
+  {id:'l43',banco:'BANCO NACION',concepto:'JACTO oct-26',mes:'2026-10',monto_ars:null,monto_usd:null},
+];
+
+let LOANS=[...LOANS_DEFAULT.map(l=>({...l}))];
+let loanEdits={};
+LOANS.forEach(l=>{loanEdits[l.id]={...l};});
+let extraLoans=[];
+
+let egresoModules={
+  operativos:{label:'Gastos operativos',items:MONTHS.map(({key})=>({key,subItems:[{id:'op1',concepto:'Combustible',monto:0},{id:'op2',concepto:'Mano de obra',monto:0}]}))},
+  produccion:{label:'Costos de producción',items:MONTHS.map(({key})=>({key,subItems:[{id:'pr1',concepto:'Semillas',monto:0},{id:'pr2',concepto:'Agroquímicos',monto:0},{id:'pr3',concepto:'Fertilizantes',monto:0}]}))},
+  comercializacion:{label:'Gastos de comercialización',items:MONTHS.map(({key})=>({key,subItems:[{id:'co1',concepto:'Flete',monto:0},{id:'co2',concepto:'Comisiones',monto:0},{id:'co3',concepto:'Sellados',monto:0}]}))},
+  arrendamientos:{label:'Arrendamientos',items:MONTHS.map(({key})=>({key,subItems:[{id:'ar1',concepto:'Alquiler campo',monto:0}]}))},
+  estructura:{label:'Gastos de estructura',items:MONTHS.map(({key})=>({key,subItems:[{id:'es1',concepto:'Administración',monto:0},{id:'es2',concepto:'Contaduría',monto:0}]}))},
+};
+
+let ventaOverrides={};
+MONTHS.forEach(({key})=>{ventaOverrides[key]={soja:null,maiz:null};});
+
+// ============================================================
+// FLUJO DE CAJA DIARIO
+// ============================================================
+// Saldo inicial de caja ingresado por el usuario
+let cajaInicial = { ars: 0, usd: 0 };
+
+// Fechas exactas de vencimiento de cuotas: { loanId: 'YYYY-MM-DD' }
+let cuotaFechas = {};
+
+// Movimientos diarios manuales: [{ id, fecha:'YYYY-MM-DD', concepto, monto_ars, monto_usd, tipo:'ingreso'|'egreso', obs }]
+let cajaMovimientos = [];
+
+// ============================================================
+// FIREBASE AUTH
+// ============================================================
+function doLogin(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const pass=document.getElementById('loginPass').value;
+  const errEl=document.getElementById('loginError');
+  errEl.style.display='none';
+  if(!email||!pass){errEl.textContent='Completá email y contraseña.';errEl.style.display='block';return;}
+  const {auth,signInWithEmailAndPassword}=window._fb;
+  signInWithEmailAndPassword(auth,email,pass).catch(e=>{
+    errEl.textContent='Email o contraseña incorrectos.';
+    errEl.style.display='block';
+  });
+}
+
+function doLogout(){
+  const {auth,signOut}=window._fb;
+  signOut(auth);
+}
+
+function viewReadOnly(){
+  isReadOnly=true;
+  document.getElementById('loginOverlay').style.display='none';
+  document.getElementById('readonlyBanner').style.display='block';
+  renderAll();
+}
+
+// ============================================================
+// FIRESTORE — GUARDAR Y CARGAR
+// ============================================================
+function setSaveStatus(s){
+  const el=document.getElementById('saveIndicator');
+  if(!el)return;
+  el.className='save-indicator '+s;
+  el.textContent=s==='saving'?'● GUARDANDO..':s==='saved'?'● GUARDADO':s==='error'?'● ERROR AL GUARDAR':'● LISTO';
+}
+
+function scheduleFirestoreSave(){
+  if(isReadOnly||!window._currentUser)return;
+  setSaveStatus('saving');
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>saveToFirestore(),1200);
+}
+
+async function saveToFirestore(){
+  if(isReadOnly||!window._currentUser)return;
+  try{
+    const {db,doc,setDoc}=window._fb;
+    const payload={
+      loanEdits,
+      extraLoans,
+      ventaOverrides,
+      grainOverride,
+      tcOverride,
+      ventasReales,
+      stockInicial: STOCK_INICIAL,
+      cajaInicial,
+      cuotaFechas,
+      cajaMovimientos,
+      egresos: Object.fromEntries(
+        Object.entries(egresoModules).map(([k,mod])=>[k,
+          Object.fromEntries(mod.items.map(item=>[item.key,item.subItems]))
+        ])
+      ),
+      updatedAt: new Date().toISOString(),
+      updatedBy: window._currentUser.email
+    };
+    await setDoc(doc(db,'flujo','datos'), payload, {merge: true});
+    setSaveStatus('saved');
+    setTimeout(()=>setSaveStatus('idle'),3000);
+  }catch(e){
+    console.error('Firestore save error:',e);
+    setSaveStatus('error');
+  }
+}
+
+window._loadFirestoreData = async function(){
+  try{
+    const {db,doc,getDoc,onSnapshot}=window._fb;
+    const docRef=doc(db,'flujo','datos');
+
+    // Escuchar cambios en tiempo real (multi-usuario)
+    onSnapshot(docRef,snap=>{
+      // Si no existe el documento aún, NO guardar vacío — solo renderizar con defaults
+      if(!snap.exists()){
+        renderAll();
+        setSaveStatus('idle');
+        return;
+      }
+      const d=snap.data();
+
+      // Cargar loanEdits — solo los que vienen de Firestore, no reemplazar los defaults
+      if(d.loanEdits && Object.keys(d.loanEdits).length > 0){
+        Object.assign(loanEdits, d.loanEdits);
+      }
+
+      // Cargar extraLoans
+      if(d.extraLoans&&Array.isArray(d.extraLoans)){
+        extraLoans=d.extraLoans;
+        extraLoans.forEach(l=>{if(!loanEdits[l.id])loanEdits[l.id]={...l};});
+      }
+
+      // Cargar ventaOverrides
+      if(d.ventaOverrides){
+        MONTHS.forEach(({key})=>{
+          if(d.ventaOverrides[key]) ventaOverrides[key]=d.ventaOverrides[key];
+        });
+      }
+
+      // Cargar grainOverride
+      if(d.grainOverride) Object.assign(grainOverride,d.grainOverride);
+
+      // Cargar tcOverride
+      if(d.tcOverride){
+        tcOverride=d.tcOverride;
+        if(tcOverride.min) document.getElementById('tcMinOv').value=tcOverride.min;
+        if(tcOverride.may) document.getElementById('tcMayOv').value=tcOverride.may;
+      }
+
+      // Cargar egresos
+      if(d.egresos){
+        Object.entries(d.egresos).forEach(([modKey,monthMap])=>{
+          if(!egresoModules[modKey])return;
+          Object.entries(monthMap).forEach(([key,subItems])=>{
+            const item=egresoModules[modKey].items.find(i=>i.key===key);
+            if(item&&Array.isArray(subItems)) item.subItems=subItems;
+          });
+        });
+      }
+
+      // Cargar ventasReales
+      if(d.ventasReales&&Array.isArray(d.ventasReales)) ventasReales=d.ventasReales;
+
+      // Cargar stock inicial editable
+      if(d.stockInicial){
+        STOCK_INICIAL.soja=d.stockInicial.soja||STOCK_INICIAL.soja;
+        STOCK_INICIAL.maiz=d.stockInicial.maiz||STOCK_INICIAL.maiz;
+      }
+
+      // Cargar datos de flujo de caja
+      if(d.cajaInicial) cajaInicial = d.cajaInicial;
+      if(d.cuotaFechas) cuotaFechas = d.cuotaFechas;
+      if(d.cajaMovimientos && Array.isArray(d.cajaMovimientos)) cajaMovimientos = d.cajaMovimientos;
+
+      renderAll();
+      setSaveStatus('idle');
+    });
+  }catch(e){
+    console.error('Firestore load error:',e);
+  }
+};
+
+// ============================================================
+// TC
+// ============================================================
+function getTcMin(){return tcOverride.min||tcLive.min||1100;}
+function getTcMay(){return tcOverride.may||tcLive.may||1080;}
+
+function getGrainPrice(grain,key){
+  if(grainOverride[grain][key]!=null)return{v:grainOverride[grain][key],src:'manual'};
+  if(grainLive[grain][key]!=null)return{v:grainLive[grain][key],src:'live'};
+  const lk=Object.keys(grainLive[grain]).sort();
+  let last=null;for(const k of lk){if(k<=key)last=grainLive[grain][k];}
+  if(last!=null)return{v:last,src:'live-interp'};
+  const fb=grain==='soja'?FALLBACK_SOJA:FALLBACK_MAIZ;
+  if(fb[key])return{v:fb[key],src:'fallback'};
+  const fk=Object.keys(fb).sort();let lf=null;
+  for(const k of fk){if(k<=key)lf=fb[k];}
+  return{v:lf||(grain==='soja'?335:170),src:'fallback-interp'};
+}
+
+async function fetchTC(){
+  setDot('dotMin','loading');setDot('dotMay','loading');
+  try{
+    const res=await fetch(API_TC,{signal:AbortSignal.timeout(7000)});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    const oficial=data.find(d=>d.casa==='oficial');
+    const mayorista=data.find(d=>d.casa==='mayorista');
+    if(oficial){tcLive.min=oficial.venta;document.getElementById('tcMinDisplay').textContent='$ '+fmt(oficial.venta,2);setDot('dotMin','live');}
+    if(mayorista){tcLive.may=mayorista.compra;document.getElementById('tcMayDisplay').textContent='$ '+fmt(mayorista.compra,2);setDot('dotMay','live');}
+    dataStatus.tc='live';updateLastUpdate();renderAll();
+  }catch(e){
+    setDot('dotMin','error');setDot('dotMay','error');
+    document.getElementById('tcMinDisplay').textContent='$ '+fmt(getTcMin(),2)+' (man.)';
+    document.getElementById('tcMayDisplay').textContent='$ '+fmt(getTcMay(),2)+' (man.)';
+    dataStatus.tc='error';
+  }
+}
+
+async function fetchGranosLive(){
+  if(NETLIFY_BASE.includes('TU-SITIO')){grainLive.soja={...FALLBACK_SOJA};grainLive.maiz={...FALLBACK_MAIZ};dataStatus.granos='fallback';renderAll();return;}
+  try{
+    const res=await fetch(FN_AGRO,{signal:AbortSignal.timeout(10000)});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    if(data.ok){if(data.soja&&Object.keys(data.soja).length>0)grainLive.soja=data.soja;if(data.maiz&&Object.keys(data.maiz).length>0)grainLive.maiz=data.maiz;dataStatus.granos='live';}
+    else{grainLive.soja={...FALLBACK_SOJA};grainLive.maiz={...FALLBACK_MAIZ};dataStatus.granos='fallback';}
+    renderAll();
+  }catch(e){grainLive.soja={...FALLBACK_SOJA};grainLive.maiz={...FALLBACK_MAIZ};dataStatus.granos='fallback';renderAll();}
+}
+
+async function fetchFinancieros(){
+  if(NETLIFY_BASE.includes('TU-SITIO')) return;
+  try {
+    // Intentar primero con IOL (más confiable, datos oficiales)
+    const resIol = await fetch(FN_IOL, {signal: AbortSignal.timeout(12000)});
+    if(resIol.ok){
+      const dataIol = await resIol.json();
+      if(dataIol.ok && dataIol.dolar_futuro && Object.keys(dataIol.dolar_futuro).length > 0){
+        dolarFuturo = dataIol.dolar_futuro;
+        dataStatus.fin = 'live';
+        dataStatus.finFuente = 'IOL';
+        return;
+      }
+    }
+  } catch(e){ /* fallback al scraping */ }
+
+  // Fallback: scraping MatbaRofex
+  try {
+    const res = await fetch(FN_FIN, {signal: AbortSignal.timeout(10000)});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    if(data.ok && data.dolar_futuro) {
+      dolarFuturo = data.dolar_futuro;
+      dataStatus.fin = 'live';
+      dataStatus.finFuente = 'A3';
+    } else {
+      dataStatus.fin = 'error';
+    }
+  } catch(e){
+    dataStatus.fin = 'error';
+  }
+}
+
+async function fetchAllData(){
+  document.getElementById('lastUpdate').textContent='Actualizando...';
+  await Promise.allSettled([fetchTC(),fetchGranosLive(),fetchFinancieros()]);
+  updateLastUpdate();
+}
+
+function updateLastUpdate(){
+  const now=new Date();
+  document.getElementById('lastUpdate').textContent='Actualizado: '+now.toLocaleTimeString('es-AR');
+}
+function setDot(id,s){const el=document.getElementById(id);if(el)el.className='status-dot '+s;}
+function onTcOverride(){
+  const min=document.getElementById('tcMinOv').value;
+  const may=document.getElementById('tcMayOv').value;
+  tcOverride.min=min?+min:null;tcOverride.may=may?+may:null;
+  document.getElementById('tcMinDisplay').textContent='$ '+fmt(getTcMin(),2)+(tcOverride.min?'*':'');
+  document.getElementById('tcMayDisplay').textContent='$ '+fmt(getTcMay(),2)+(tcOverride.may?'*':'');
+  scheduleFirestoreSave();renderAll();
+}
+function clearTcOverride(){
+  document.getElementById('tcMinOv').value='';document.getElementById('tcMayOv').value='';
+  tcOverride={min:null,may:null};
+  document.getElementById('tcMinDisplay').textContent='$ '+fmt(getTcMin(),2);
+  document.getElementById('tcMayDisplay').textContent='$ '+fmt(getTcMay(),2);
+  scheduleFirestoreSave();renderAll();
+}
+
+// ============================================================
+// CÁLCULO
+// ============================================================
+function getLoanTotal(key){
+  let t=0;
+  LOANS.forEach(l=>{if(l.mes===key){const e=loanEdits[l.id];if(e&&e.monto_ars)t+=e.monto_ars;if(e&&e.monto_usd)t+=e.monto_usd*getTcMin();}});
+  extraLoans.forEach(l=>{if(l.mes===key){const e=loanEdits[l.id]||l;if(e.monto_ars)t+=e.monto_ars;if(e.monto_usd)t+=e.monto_usd*getTcMin();}});
+  return t;
+}
+function getEgresoMod(key,modKey){
+  const mdata=egresoModules[modKey].items.find(i=>i.key===key);
+  let t=0;if(mdata)mdata.subItems.forEach(s=>t+=(+s.monto||0));return t;
+}
+function getEgresoTotal(key){return Object.keys(egresoModules).reduce((a,k)=>a+getEgresoMod(key,k),0);}
+
+// Redondear a 2 decimales para presentación
+function r2(n){return Math.round(n*100)/100;}
+// Redondear a 6 decimales para cálculos intermedios de toneladas (sin perder precisión)
+function r6(n){return Math.round(n*1000000)/1000000;}
+// Umbral mínimo para considerar déficit real (evitar -0 y falsas alarmas por float)
+const DEFICIT_THRESHOLD = 1; // 1 peso ARS
+
+// Función central: calcula EXACTAMENTE cuántas toneladas se necesitan para cubrir
+// un monto en ARS dado un precio USD/tn y TC, sin perder centavos por redondeo.
+// Devuelve toneladas con 6 decimales de precisión, limitadas al stock disponible.
+function calcTnNecesarias(montoArs, precioUsdTn, tcMay, stockDisponible){
+  if(precioUsdTn<=0||tcMay<=0||stockDisponible<=0) return 0;
+  const precioArsTn = precioUsdTn * tcMay;
+  // Toneladas exactas sin redondear aún
+  const tnExactas = montoArs / precioArsTn;
+  // Limitar al stock disponible
+  const tnLimitadas = Math.min(tnExactas, stockDisponible);
+  // Redondear a 6 decimales (equivale a gramos de grano — más que suficiente)
+  return r6(tnLimitadas);
+}
+
+// Verifica si las toneladas calculadas cubren el egreso y agrega la fracción mínima
+// necesaria si hay un residuo de punto flotante (ej: 0.01 ARS de diferencia)
+function ajustarTnSiNecesario(tnActual, precioUsdTn, tcMay, stockDisponible, egrPendiente){
+  const ingreso = tnActual * precioUsdTn * tcMay;
+  const residuo = egrPendiente - ingreso;
+  if(residuo <= 0 || residuo < DEFICIT_THRESHOLD) return tnActual;
+  // Hay un residuo real — agregar la fracción mínima para cubrirlo
+  const tnExtra = r6(residuo / (precioUsdTn * tcMay));
+  const tnAjustada = r6(tnActual + tnExtra);
+  return Math.min(tnAjustada, stockDisponible);
+}
+
+function calcFlow(){
+  let stockSoja = STOCK_INICIAL.soja;
+  let stockMaiz = STOCK_INICIAL.maiz;
+  const tcMay = getTcMay();
+  const tcMin = getTcMin();
+
+  const result={};
+  MONTHS.forEach(({key})=>{
+    const egr = getLoanTotal(key) + getEgresoTotal(key);
+    const pSoja = getGrainPrice('soja',key).v;
+    const pMaiz = getGrainPrice('maiz',key).v;
+
+    // Ventas reales confirmadas en este mes
+    const vrSojaMes = ventasReales.filter(v=>v.grano==='soja'&&v.mes===key);
+    const vrMaizMes = ventasReales.filter(v=>v.grano==='maiz'&&v.mes===key);
+    const tieneVentasReales = vrSojaMes.length>0||vrMaizMes.length>0;
+
+    const ovS = ventaOverrides[key].soja;
+    const ovM = ventaOverrides[key].maiz;
+
+    let vendSoja=0, vendMaiz=0;
+
+    if(tieneVentasReales){
+      // Ventas reales: usar exactamente lo declarado
+      vendSoja = vrSojaMes.reduce((a,v)=>a+(+v.toneladas||0),0);
+      vendMaiz = vrMaizMes.reduce((a,v)=>a+(+v.toneladas||0),0);
+
+    } else if(ovS!==null||ovM!==null){
+      // Override manual del usuario
+      vendSoja = Math.min(ovS!==null?+ovS:0, stockSoja);
+      vendMaiz = Math.min(ovM!==null?+ovM:0, stockMaiz);
+
+    } else if(egr>0){
+      // ── MOTOR AUTOMÁTICO CON COBERTURA EXACTA ──
+      // 1. Determinar orden: primero el grano de mejor precio ARS/tn
+      const arsSoja = pSoja * tcMay;
+      const arsMaiz = pMaiz * tcMay;
+      const primero  = arsSoja >= arsMaiz ? 'soja' : 'maiz';
+      const segundo  = primero === 'soja'  ? 'maiz' : 'soja';
+      const pP  = primero==='soja' ? pSoja  : pMaiz;
+      const pS  = segundo==='soja' ? pSoja  : pMaiz;
+      const stP = primero==='soja' ? stockSoja : stockMaiz;
+      const stS = segundo==='soja' ? stockSoja : stockMaiz;
+
+      // 2. Calcular tn del grano principal con precisión completa
+      let tnP = calcTnNecesarias(egr, pP, tcMay, stP);
+      // Ajustar si hay residuo de punto flotante
+      tnP = ajustarTnSiNecesario(tnP, pP, tcMay, stP, egr);
+
+      const cubiertoPorP = tnP * pP * tcMay;
+      let faltante = egr - cubiertoPorP;
+
+      // 3. Si el grano principal no alcanzó (agotó stock), usar el segundo
+      let tnS = 0;
+      if(faltante > DEFICIT_THRESHOLD && stS > 0){
+        tnS = calcTnNecesarias(faltante, pS, tcMay, stS);
+        tnS = ajustarTnSiNecesario(tnS, pS, tcMay, stS, faltante);
+      }
+
+      if(primero==='soja'){vendSoja=tnP; vendMaiz=tnS;}
+      else{vendMaiz=tnP; vendSoja=tnS;}
+    }
+
+    // Calcular ingresos — precio real si hay venta confirmada, sino precio de mercado
+    const ingSojaUsd = tieneVentasReales
+      ? vrSojaMes.reduce((a,v)=>(+v.toneladas||0)*(+v.precio_usd||pSoja)+a, 0)
+      : vendSoja * pSoja;
+    const ingMaizUsd = tieneVentasReales
+      ? vrMaizMes.reduce((a,v)=>(+v.toneladas||0)*(+v.precio_usd||pMaiz)+a, 0)
+      : vendMaiz * pMaiz;
+    const ingTotalUsd = ingSojaUsd + ingMaizUsd;
+    const ingTotalArs = ingTotalUsd * tcMay;
+
+    // Déficit real: solo si supera el umbral (elimina -0 y falsos déficits de float)
+    const diferencia = egr - ingTotalArs;
+    const deficit = diferencia > DEFICIT_THRESHOLD ? r2(diferencia) : 0;
+    const neto = r2(ingTotalArs - egr);
+
+    // Descontar stock con precisión
+    stockSoja = Math.max(0, stockSoja - vendSoja);
+    stockMaiz = Math.max(0, stockMaiz - vendMaiz);
+
+    result[key]={
+      egr: r2(egr),
+      ingSojaUsd: r2(ingSojaUsd),
+      ingMaizUsd: r2(ingMaizUsd),
+      ingTotalUsd: r2(ingTotalUsd),
+      ingTotalArs: r2(ingTotalArs),
+      vendSoja: r6(vendSoja),
+      vendMaiz: r6(vendMaiz),
+      pSoja, pMaiz, deficit,
+      stockSojaPost: r2(stockSoja),
+      stockMaizPost: r2(stockMaiz),
+      neto,
+      modoAuto: !tieneVentasReales && ovS===null && ovM===null,
+      esReal: tieneVentasReales
+    };
+  });
+
+  // Saldo acumulado
+  let acum=0;
+  MONTHS.forEach(({key})=>{acum=r2(acum+result[key].neto); result[key].acum=acum;});
+  return result;
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function fmt(n,dec=0){
+  if(n===null||n===undefined)return '–';
+  // Evitar -0 por punto flotante
+  const v = n===0||Object.is(n,-0) ? 0 : n;
+  return v.toLocaleString('es-AR',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+}
+function fmtTn(n){return n>0?fmt(n,2)+' tn':'–';}
+function srcBadge(src){
+  if(src==='live'||src==='live-interp')return '<span class="badge live">LIVE</span>';
+  if(src==='manual')return '<span class="badge manual">MANUAL</span>';
+  return '<span class="badge auto">FALLBACK</span>';
+}
+function roMask(){return isReadOnly?'class="readonly-mask"':'';}
+
+// ============================================================
+// RENDER
+// ============================================================
+function setTab(t){
+  currentTab=t;
+  document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('active',el.getAttribute('onclick').includes(`'${t}'`)));
+  renderTabContent();
+  if(window._onTabRender) window._onTabRender();
+}
+function renderAll(){
+  const flow=calcFlow();
+  renderStockBar(flow);renderAlertas(flow);renderSummary(flow);renderTabContent(flow);
+}
+function renderStockBar(flow){
+  const last=flow[MONTHS[MONTHS.length-1].key];
+  const sr=last.stockSojaPost,mr=last.stockMaizPost;
+  const sojaVendReal=ventasReales.filter(v=>v.grano==='soja').reduce((a,v)=>a+(+v.toneladas||0),0);
+  const maizVendReal=ventasReales.filter(v=>v.grano==='maiz').reduce((a,v)=>a+(+v.toneladas||0),0);
+  document.getElementById('stockBar').innerHTML=`
+    <div class="stock-card">
+      <h4>SOJA — Stock inicial</h4>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <input class="stock-edit-input" type="number" step="0.01" min="0" value="${STOCK_INICIAL.soja}" ${isReadOnly?'disabled':''} onchange="editStockInicial('soja',this.value)" title="Editá el stock inicial de soja">
+        <span style="font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">tn</span>
+      </div>
+      <div class="stock-track"><div class="stock-fill soja" style="width:${Math.min(100,(STOCK_INICIAL.soja-sojaVendReal)/STOCK_INICIAL.soja*100).toFixed(1)}%"></div></div>
+      <div class="stock-nums">
+        <span>Real vendido: <b style="color:var(--green)">${fmt(sojaVendReal,2)} tn</b></span>
+        <span>Disponible: <b>${fmt(Math.max(0,STOCK_INICIAL.soja-sojaVendReal),2)} tn</b></span>
+      </div>
+    </div>
+    <div class="stock-card">
+      <h4>MAÍZ — Stock inicial</h4>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <input class="stock-edit-input" type="number" step="0.01" min="0" value="${STOCK_INICIAL.maiz}" ${isReadOnly?'disabled':''} onchange="editStockInicial('maiz',this.value)" title="Editá el stock inicial de maíz">
+        <span style="font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">tn</span>
+      </div>
+      <div class="stock-track"><div class="stock-fill maiz" style="width:${Math.min(100,(STOCK_INICIAL.maiz-maizVendReal)/STOCK_INICIAL.maiz*100).toFixed(1)}%"></div></div>
+      <div class="stock-nums">
+        <span>Real vendido: <b style="color:var(--maiz)">${fmt(maizVendReal,2)} tn</b></span>
+        <span>Disponible: <b>${fmt(Math.max(0,STOCK_INICIAL.maiz-maizVendReal),2)} tn</b></span>
+      </div>
+    </div>
+    <div class="stock-card" style="background:${dataStatus.granos==='live'?'#E4F0EB':dataStatus.granos==='fallback'?'#F5EDDA':'#F5E8E8'}">
+      <h4>ESTADO DATOS</h4>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;margin-top:4px;">
+        <div>TC BNA: <b style="color:${dataStatus.tc==='live'?'#166534':'#8B2020'}">${dataStatus.tc.toUpperCase()}</b></div>
+        <div>Futuros agro: <b style="color:${dataStatus.granos==='live'?'#166534':dataStatus.granos==='fallback'?'#7A4F0A':'#8B2020'}">${dataStatus.granos.toUpperCase()}</b></div>
+        <div>Futuros fin: <b style="color:${dataStatus.fin==='live'?'#166534':'#8B2020'}">${dataStatus.fin.toUpperCase()}</b></div>
+        <div style="margin-top:4px;">Firebase: <b style="color:${window._currentUser?'#166534':'#7A4F0A'}">${window._currentUser?'CONECTADO':'SOLO LECTURA'}</b></div>
+        <div style="margin-top:4px;">Ventas registradas: <b>${ventasReales.length}</b></div>
+      </div>
+    </div>`;
+}
+function renderAlertas(flow){
+  const defs=MONTHS.filter(({key})=>flow[key].deficit>0);
+  if(!defs.length){document.getElementById('alertasDeficit').innerHTML='';return;}
+  document.getElementById('alertasDeficit').innerHTML=defs.map(({key,y,m})=>{
+    const f=flow[key];
+    return `<div class="alert-deficit">▲ <div><b>${MN[m]} ${y}:</b> Déficit de $ ${fmt(f.deficit)} — stock insuficiente. Soja: ${fmtTn(f.vendSoja)} · Maíz: ${fmtTn(f.vendMaiz)}.</div></div>`;
+  }).join('');
+}
+function renderSummary(flow){
+  let totalUsd=0,totalEgr=0,totalNeto=0;
+  MONTHS.forEach(({key})=>{totalUsd+=flow[key].ingTotalUsd;totalEgr+=flow[key].egr;totalNeto+=flow[key].neto;});
+  const sf=flow[MONTHS[MONTHS.length-1].key].acum;
+  const dm=MONTHS.filter(({key})=>flow[key].deficit>0).length;
+  document.getElementById('summaryGrid').innerHTML=`
+    <div class="metric"><div class="ml">Ingresos (USD)</div><div class="mv">U$S ${fmt(totalUsd)}</div></div>
+    <div class="metric"><div class="ml">Ingresos (ARS)</div><div class="mv pos">$ ${fmt(totalUsd*getTcMay())}</div></div>
+    <div class="metric"><div class="ml">Egresos (ARS)</div><div class="mv neg">$ ${fmt(totalEgr)}</div></div>
+    <div class="metric"><div class="ml">Neto período</div><div class="mv ${totalNeto>=0?'pos':'neg'}">$ ${fmt(totalNeto)}</div></div>
+    <div class="metric"><div class="ml">Saldo acumulado</div><div class="mv ${sf>=0?'pos':'neg'}">$ ${fmt(sf)}</div></div>
+    <div class="metric"><div class="ml">Meses con déficit</div><div class="mv ${dm>0?'warn':''}">${dm}</div></div>`;
+}
+function renderTabContent(flow){
+  if(!flow)flow=calcFlow();
+  const el=document.getElementById('tabContent');
+  if(currentTab==='mensual')el.innerHTML=renderMensual(flow);
+  else if(currentTab==='anual')el.innerHTML=renderAnual(flow);
+  else if(currentTab==='flujo')el.innerHTML=renderFlujoTabla(flow);
+  else if(currentTab==='granos')el.innerHTML=renderGranos(flow);
+  else if(currentTab==='historial')el.innerHTML=renderHistorial();
+  else if(currentTab==='creditos')el.innerHTML=renderCreditos();
+  else if(currentTab==='egresos')el.innerHTML=renderEgresosMod();
+  else if(currentTab==='caja')el.innerHTML=renderCaja();
+  else if(currentTab==='precios')el.innerHTML=renderPrecios();
+  bindCharts(flow);
+}
+function renderMensual(flow){
+  const mk=MONTHS[currentMonthIdx];const f=flow[mk.key];
+  const ovS=ventaOverrides[mk.key].soja,ovM=ventaOverrides[mk.key].maiz;
+  const pSinfo=getGrainPrice('soja',mk.key),pMinfo=getGrainPrice('maiz',mk.key);
+  let loansHtml=[...LOANS,...extraLoans].filter(l=>l.mes===mk.key).map(l=>{
+    const e=loanEdits[l.id]||l;const tot=(e.monto_ars||0)+(e.monto_usd||0)*getTcMin();
+    return `<tr><td>${e.banco}</td><td>${e.concepto}</td><td>${e.monto_ars?'$ '+fmt(e.monto_ars):'-'}</td><td>${e.monto_usd?'U$S '+fmt(e.monto_usd):'-'}</td><td>$ ${fmt(tot)}</td></tr>`;
+  }).join('');
+  if(!loansHtml)loansHtml='<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:12px;">Sin cuotas este mes</td></tr>';
+  let egHtml='';
+  Object.entries(egresoModules).forEach(([k,mod])=>{const mdata=mod.items.find(i=>i.key===mk.key);if(!mdata)return;mdata.subItems.forEach(s=>{if(+s.monto)egHtml+=`<tr><td>${mod.label}</td><td>${s.concepto}</td><td>$ ${fmt(+s.monto)}</td></tr>`;});});
+  if(!egHtml)egHtml='<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:12px;">Sin egresos operativos cargados</td></tr>';
+  return `
+  <div class="month-nav">
+    <button onclick="prevMonth()">← PREV</button>
+    <div class="cur-month">${MN[mk.m].toUpperCase()} ${mk.y}</div>
+    <button onclick="nextMonth()">NEXT →</button>
+    <select onchange="jumpMonth(this.value)">${MONTHS.map((m,i)=>`<option value="${i}" ${i===currentMonthIdx?'selected':''}>${MN[m.m].substring(0,3).toUpperCase()} ${m.y}</option>`).join('')}</select>
+  </div>
+  ${f.deficit>0?`<div class="alert-deficit" style="margin-bottom:12px;">▲ <div>Déficit de <b>$ ${fmt(f.deficit)}</b> — stock insuficiente.</div></div>`:''}
+  <div class="summary-grid" style="margin-bottom:13px;">
+    <div class="metric"><div class="ml">Ingresos mes (USD)</div><div class="mv pos">U$S ${fmt(f.ingTotalUsd,2)}</div></div>
+    <div class="metric"><div class="ml">Ingresos mes (ARS)</div><div class="mv pos">$ ${fmt(f.ingTotalArs)}</div></div>
+    <div class="metric"><div class="ml">Egresos mes</div><div class="mv neg">$ ${fmt(f.egr)}</div></div>
+    <div class="metric"><div class="ml">Neto mes</div><div class="mv ${f.neto>=0?'pos':'neg'}">$ ${fmt(f.neto)}</div></div>
+    <div class="metric"><div class="ml">Saldo acumulado</div><div class="mv ${f.acum>=0?'pos':'neg'}">$ ${fmt(f.acum)}</div></div>
+  </div>
+  <div class="section">
+    <div class="section-header" onclick="toggleSection('ing-g')"><h3>VENTAS DE GRANOS</h3>
+      <div class="stotals"><span>U$S ${fmt(f.ingTotalUsd,2)} — $ ${fmt(f.ingTotalArs)}</span><span class="badge ${f.modoAuto?'auto-mode':'manual-mode'}">${f.modoAuto?'AUTO':'MANUAL'}</span></div></div>
+    <div class="section-body open" id="ing-g">
+      <div class="info-note">TC mayorista BNA en vivo ($ ${fmt(getTcMay(),2)}). Motor vende primero el grano de mayor precio ARS/tn.</div>
+      <div ${roMask()}><table class="sub-table">
+        <tr><th>Grano</th><th>Stock pre-venta</th><th>U$S/tn</th><th>Fuente</th><th>Tn auto</th><th>Tn manual</th><th>Total USD</th><th>Total ARS</th></tr>
+        <tr><td><b>SOJA</b></td><td>${fmt(f.stockSojaPost+f.vendSoja,2)} tn</td>
+          <td><input class="ov-input" type="number" step="0.01" value="${pSinfo.v}" onchange="setPriceOv('${mk.key}','soja',this.value)"></td>
+          <td>${srcBadge(pSinfo.src)}</td><td>${fmtTn(f.vendSoja)}</td>
+          <td><input class="ov-input" type="number" step="0.01" min="0" placeholder="—" value="${ovS!==null?ovS:''}" onchange="setVentaOv('${mk.key}','soja',this.value)"></td>
+          <td>U$S ${fmt(f.ingSojaUsd,2)}</td><td>$ ${fmt(f.ingSojaUsd*getTcMay())}</td></tr>
+        <tr><td><b>MAÍZ</b></td><td>${fmt(f.stockMaizPost+f.vendMaiz,2)} tn</td>
+          <td><input class="ov-input" type="number" step="0.01" value="${pMinfo.v}" onchange="setPriceOv('${mk.key}','maiz',this.value)"></td>
+          <td>${srcBadge(pMinfo.src)}</td><td>${fmtTn(f.vendMaiz)}</td>
+          <td><input class="ov-input" type="number" step="0.01" min="0" placeholder="—" value="${ovM!==null?ovM:''}" onchange="setVentaOv('${mk.key}','maiz',this.value)"></td>
+          <td>U$S ${fmt(f.ingMaizUsd,2)}</td><td>$ ${fmt(f.ingMaizUsd*getTcMay())}</td></tr>
+      </table></div>
+      <div style="margin-top:6px;font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">Stock al cierre: soja <b>${fmt(f.stockSojaPost,2)} tn</b> · maíz <b>${fmt(f.stockMaizPost,2)} tn</b></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-header" onclick="toggleSection('cuotas-m')"><h3>CUOTAS CREDITICIAS</h3>
+      <div class="stotals"><span>$ ${fmt(getLoanTotal(mk.key))}</span><span style="font-size:10px;">TC min. BNA: $ ${fmt(getTcMin(),2)}</span></div></div>
+    <div class="section-body" id="cuotas-m">
+      <table class="sub-table"><tr><th>Banco</th><th>Concepto</th><th>ARS</th><th>USD</th><th>Total ARS</th></tr>${loansHtml}</table>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-header" onclick="toggleSection('egresos-m')"><h3>EGRESOS OPERATIVOS</h3>
+      <div class="stotals"><span>$ ${fmt(getEgresoTotal(mk.key))}</span></div></div>
+    <div class="section-body" id="egresos-m">
+      <table class="sub-table"><tr><th>Módulo</th><th>Concepto</th><th>Monto ARS</th></tr>${egHtml}</table>
+      <button class="add-row-btn" onclick="setTab('egresos')">✎ Editar en módulo de egresos</button>
+    </div>
+  </div>`;
+}
+function renderAnual(flow){
+  const byYear={};
+  MONTHS.forEach(({key,y})=>{if(!byYear[y])byYear[y]={ingUsd:0,ingArs:0,egr:0,neto:0,def:0};byYear[y].ingUsd+=flow[key].ingTotalUsd;byYear[y].ingArs+=flow[key].ingTotalArs;byYear[y].egr+=flow[key].egr;byYear[y].neto+=flow[key].neto;byYear[y].def+=flow[key].deficit;});
+  const rows=Object.entries(byYear).map(([y,d])=>`<tr>
+    <td style="text-align:left;font-weight:600;font-family:'IBM Plex Mono',monospace;">${y}</td>
+    <td>U$S ${fmt(d.ingUsd)}</td><td>$ ${fmt(d.ingArs)}</td><td>$ ${fmt(d.egr)}</td>
+    <td style="color:${d.neto>=0?'var(--green)':'var(--red)'}">$ ${fmt(d.neto)}</td>
+    <td style="color:${d.def>0?'var(--red)':'var(--text3)'}">${d.def>0?'$ '+fmt(d.def):'—'}</td></tr>`).join('');
+  return `<div class="flow-table-wrap"><table class="flow-table">
+    <thead><tr><th style="text-align:left;">AÑO</th><th>INGRESOS USD</th><th>INGRESOS ARS</th><th>EGRESOS ARS</th><th>NETO ARS</th><th>DÉFICIT ARS</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>
+  <div class="chart-wrap"><canvas id="anualChart"></canvas></div>
+  <div class="chart-legend">
+    <span><span class="legend-dot" style="background:#1A6B4A"></span>Ingresos ARS</span>
+    <span><span class="legend-dot" style="background:#8B2020"></span>Egresos ARS</span>
+    <span><span class="legend-dot" style="background:transparent;border:1px dashed #1A3F7A"></span>Neto ARS</span>
+  </div>`;
+}
+function renderFlujoTabla(flow){
+  let hdr='<th style="text-align:left;min-width:160px;">CONCEPTO</th>';
+  MONTHS.forEach(({key,y,m})=>hdr+=`<th>${MN[m].substring(0,3).toUpperCase()}<br>${y}</th>`);
+  const rows=[];
+  const addRow=(label,valFn,cls='',negCls=false)=>{
+    let r=`<tr class="${cls}"><td>${label}</td>`;
+    MONTHS.forEach(({key})=>{const v=valFn(key);const c=negCls&&v<0?'deficit':'';r+=`<td class="${c}">${v?'$ '+fmt(v):'-'}</td>`;});
+    r+='</tr>';rows.push(r);
+  };
+  addRow('Soja vendida (ARS)',k=>flow[k].ingSojaUsd*getTcMay());
+  addRow('Maíz vendido (ARS)',k=>flow[k].ingMaizUsd*getTcMay());
+  addRow('TOTAL INGRESOS',k=>flow[k].ingTotalArs,'subtotal pos-total');
+  addRow('Cuotas crediticias',k=>getLoanTotal(k));
+  addRow('Gastos operativos',k=>getEgresoMod(k,'operativos'));
+  addRow('Costos de producción',k=>getEgresoMod(k,'produccion'));
+  addRow('Gastos de comercialización',k=>getEgresoMod(k,'comercializacion'));
+  addRow('Arrendamientos',k=>getEgresoMod(k,'arrendamientos'));
+  addRow('Gastos de estructura',k=>getEgresoMod(k,'estructura'));
+  addRow('TOTAL EGRESOS',k=>flow[k].egr,'subtotal neg-total');
+  addRow('NETO MES',k=>flow[k].neto,'grandtotal',true);
+  addRow('SALDO ACUMULADO',k=>flow[k].acum,'grandtotal',true);
+  addRow('DÉFICIT',k=>flow[k].deficit||null,'');
+  return `<div class="flow-table-wrap"><table class="flow-table"><thead><tr>${hdr}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
+}
+function renderGranos(flow){
+  const sojaVendReal=ventasReales.filter(v=>v.grano==='soja').reduce((a,v)=>a+(+v.toneladas||0),0);
+  const maizVendReal=ventasReales.filter(v=>v.grano==='maiz').reduce((a,v)=>a+(+v.toneladas||0),0);
+  const sojaDisp=Math.max(0,STOCK_INICIAL.soja-sojaVendReal);
+  const maizDisp=Math.max(0,STOCK_INICIAL.maiz-maizVendReal);
+
+  const rows=MONTHS.map(({key,y,m})=>{
+    const f=flow[key];
+    const pS=getGrainPrice('soja',key);const pM=getGrainPrice('maiz',key);
+    const mejor=pS.v*getTcMay()>=pM.v*getTcMay()?'soja':'maiz';
+    const vrMes=ventasReales.filter(v=>v.mes===key);
+    const esReal=f.esReal;
+    const rowCls=esReal?'venta-real-row':'venta-proyectada-row';
+    return `<tr class="${rowCls}">
+      <td style="text-align:left;font-family:'IBM Plex Mono',monospace;font-weight:600;">${MN[m].substring(0,3).toUpperCase()} ${y}
+        ${esReal?'<span class="historial-badge real">REAL</span>':'<span class="historial-badge proyectado">PROY.</span>'}
+      </td>
+      <td>${mejor==='soja'?'★ ':''}<span style="color:var(--green)">U$S ${fmt(pS.v,2)}</span> ${srcBadge(pS.src)}</td>
+      <td>${fmtTn(f.vendSoja)}</td>
+      <td>$ ${fmt(f.ingSojaUsd*getTcMay())}</td>
+      <td>${fmt(f.stockSojaPost,2)} tn</td>
+      <td>${mejor==='maiz'?'★ ':''}<span style="color:var(--maiz)">U$S ${fmt(pM.v,2)}</span> ${srcBadge(pM.src)}</td>
+      <td>${fmtTn(f.vendMaiz)}</td>
+      <td>$ ${fmt(f.ingMaizUsd*getTcMay())}</td>
+      <td>${fmt(f.stockMaizPost,2)} tn</td>
+      <td style="font-weight:600;color:var(--green)">U$S ${fmt(f.ingTotalUsd,2)}</td>
+      <td class="${f.deficit>0?'deficit':''}">${f.deficit>0?'-$ '+fmt(f.deficit):'—'}</td>
+      <td>${isReadOnly?'':esReal?`<span style="font-size:10px;color:var(--text3);">Ver historial</span>`:`<button class="confirm-venta-btn" onclick="openModalVenta('${key}')">+ Registrar venta</button>`}</td>
+    </tr>`;
+  }).join('');
+
+  return `
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+    <div class="info-note" style="margin:0;">★ mejor precio ARS/tn · <span class="historial-badge real">REAL</span> venta confirmada · <span class="historial-badge proyectado">PROY.</span> proyección automática</div>
+    ${isReadOnly?'':'<button class="confirm-venta-btn" style="font-size:12px;padding:6px 14px;" onclick="openModalVenta(null)">+ Registrar nueva venta</button>'}
+  </div>
+  <div style="display:flex;gap:16px;margin-bottom:10px;font-family:\'IBM Plex Mono\',monospace;font-size:11px;flex-wrap:wrap;">
+    <span>Stock soja disponible: <b style="color:var(--green)">${fmt(sojaDisp,2)} tn</b></span>
+    <span>Stock maíz disponible: <b style="color:var(--maiz)">${fmt(maizDisp,2)} tn</b></span>
+    <span>Ventas reales registradas: <b>${ventasReales.length}</b></span>
+  </div>
+  <div class="flow-table-wrap"><table class="flow-table">
+    <thead><tr>
+      <th style="text-align:left;">MES</th>
+      <th>U$S/TN SOJA</th><th>TN SOJA</th><th>ARS SOJA</th><th>STOCK SOJA</th>
+      <th>U$S/TN MAÍZ</th><th>TN MAÍZ</th><th>ARS MAÍZ</th><th>STOCK MAÍZ</th>
+      <th>TOTAL USD</th><th>DÉFICIT</th><th>ACCIÓN</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function renderHistorial(){
+  const sojaVendReal=ventasReales.filter(v=>v.grano==='soja').reduce((a,v)=>a+(+v.toneladas||0),0);
+  const maizVendReal=ventasReales.filter(v=>v.grano==='maiz').reduce((a,v)=>a+(+v.toneladas||0),0);
+  const totalUsdReal=ventasReales.reduce((a,v)=>(+v.toneladas||0)*(+v.precio_usd||0)+a,0);
+
+  const sorted=[...ventasReales].sort((a,b)=>a.fecha>b.fecha?-1:1);
+  const rows=sorted.length?sorted.map(v=>{
+    const gColor=v.grano==='soja'?'var(--green)':'var(--maiz)';
+    const totalUsd=(+v.toneladas||0)*(+v.precio_usd||0);
+    const totalArs=totalUsd*getTcMay();
+    return `<tr>
+      <td style="text-align:left;font-family:'IBM Plex Mono',monospace;font-weight:600;">${v.fecha||'–'}</td>
+      <td><b style="color:${gColor}">${v.grano.toUpperCase()}</b></td>
+      <td style="font-family:'IBM Plex Mono',monospace;">${fmt(+v.toneladas,2)} tn</td>
+      <td style="font-family:'IBM Plex Mono',monospace;">U$S ${fmt(+v.precio_usd,2)}</td>
+      <td style="font-family:'IBM Plex Mono',monospace;color:var(--green)">U$S ${fmt(totalUsd,2)}</td>
+      <td style="font-family:'IBM Plex Mono',monospace;">$ ${fmt(totalArs)}</td>
+      <td style="color:var(--text3);font-size:11px;">${v.obs||'—'}</td>
+      <td style="font-size:10px;color:var(--text3);">${v.registradoPor||'—'}</td>
+      <td>${isReadOnly?'':'<button class="del-btn" onclick="eliminarVentaReal(\''+v.id+'\')">✕</button>'}</td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:20px;font-family:\'IBM Plex Mono\',monospace;">No hay ventas reales registradas aún.</td></tr>';
+
+  return `
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text2);">HISTORIAL DE VENTAS CONFIRMADAS</div>
+    ${isReadOnly?'':'<button class="confirm-venta-btn" style="font-size:12px;padding:6px 14px;" onclick="openModalVenta(null)">+ Registrar nueva venta</button>'}
+  </div>
+  <div class="summary-grid" style="margin-bottom:14px;">
+    <div class="metric"><div class="ml">Soja vendida real</div><div class="mv pos">${fmt(sojaVendReal,2)} tn</div></div>
+    <div class="metric"><div class="ml">Maíz vendido real</div><div class="mv" style="color:var(--maiz)">${fmt(maizVendReal,2)} tn</div></div>
+    <div class="metric"><div class="ml">Total ingresos reales (USD)</div><div class="mv pos">U$S ${fmt(totalUsdReal,2)}</div></div>
+    <div class="metric"><div class="ml">Total ingresos reales (ARS)</div><div class="mv pos">$ ${fmt(totalUsdReal*getTcMay())}</div></div>
+    <div class="metric"><div class="ml">Stock soja restante</div><div class="mv">${fmt(Math.max(0,STOCK_INICIAL.soja-sojaVendReal),2)} tn</div></div>
+    <div class="metric"><div class="ml">Stock maíz restante</div><div class="mv">${fmt(Math.max(0,STOCK_INICIAL.maiz-maizVendReal),2)} tn</div></div>
+  </div>
+  <div class="flow-table-wrap"><table class="sub-table">
+    <thead><tr><th>FECHA</th><th>GRANO</th><th>TONELADAS</th><th>PRECIO U$S/TN</th><th>TOTAL USD</th><th>TOTAL ARS</th><th>OBSERVACIÓN</th><th>REGISTRADO POR</th><th></th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+function renderPrecios(){
+  const mesesCotizados=MONTHS.slice(0,24);
+  const sojaItems=mesesCotizados.map(({key,y,m})=>{const p=getGrainPrice('soja',key);const isLive=p.src==='live'||p.src==='live-interp';return `<div class="precio-item ${isLive?'live-price':''}"><div class="pi-mes">${MN[m].substring(0,3).toUpperCase()} ${y}</div><div class="pi-val">U$S ${fmt(p.v,1)}</div><div class="pi-src">${p.src.toUpperCase()}</div></div>`;}).join('');
+  const maizItems=mesesCotizados.map(({key,y,m})=>{const p=getGrainPrice('maiz',key);const isLive=p.src==='live'||p.src==='live-interp';return `<div class="precio-item ${isLive?'live-price':''}"><div class="pi-mes">${MN[m].substring(0,3).toUpperCase()} ${y}</div><div class="pi-val">U$S ${fmt(p.v,1)}</div><div class="pi-src">${p.src.toUpperCase()}</div></div>`;}).join('');
+  const dolarItems=Object.entries(dolarFuturo).sort().slice(0,24).map(([key,v])=>{const[y,m]=key.split('-');return `<div class="precio-item live-price"><div class="pi-mes">${MN[+m-1].substring(0,3).toUpperCase()} ${y}</div><div class="pi-val">$ ${fmt(v,0)}</div><div class="pi-src">DÓLAR FUTURO</div></div>`;}).join('')||'<div style="color:var(--text3);font-size:12px;font-family:\'IBM Plex Mono\',monospace;">Sin datos. Configurá Netlify para activar.</div>';
+  return `
+  <div class="precios-panel"><h4><span class="status-dot ${dataStatus.tc==='live'?'live':'error'}"></span>TIPOS DE CAMBIO BNA (dolarapi.com)</h4>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <div class="precio-item live-price"><div class="pi-mes">MINORISTA VENDEDOR</div><div class="pi-val">$ ${fmt(tcLive.min||getTcMin(),2)}</div><div class="pi-src">BNA OFICIAL</div></div>
+      <div class="precio-item live-price"><div class="pi-mes">MAYORISTA COMPRADOR</div><div class="pi-val">$ ${fmt(tcLive.may||getTcMay(),2)}</div><div class="pi-src">BNA MAYORISTA</div></div>
+    </div></div>
+  <div class="precios-panel"><h4><span class="status-dot ${dataStatus.granos==='live'?'live':dataStatus.granos==='fallback'?'stale':'error'}"></span>FUTUROS SOJA ROSARIO (MatbaRofex / A3)</h4>
+    <div class="precios-grid">${sojaItems}</div></div>
+  <div class="precios-panel"><h4><span class="status-dot ${dataStatus.granos==='live'?'live':dataStatus.granos==='fallback'?'stale':'error'}"></span>FUTUROS MAÍZ ROSARIO (MatbaRofex / A3)</h4>
+    <div class="precios-grid">${maizItems}</div></div>
+  <div class="precios-panel"><h4><span class="status-dot ${dataStatus.fin==='live'?'live':'error'}"></span>FUTUROS FINANCIEROS — DÓLAR ROFEX ${dataStatus.finFuente?`<span class="badge live" style="margin-left:6px;">${dataStatus.finFuente}</span>`:''}</h4>
+    <div class="precios-grid">${dolarItems}</div></div>`;
+}
+function renderCreditos(){
+  const all=[...LOANS,...extraLoans];
+  const rows=all.map(l=>{
+    const e=loanEdits[l.id]||l;
+    const tot=(e.monto_ars||0)+(e.monto_usd||0)*getTcMin();
+    const fechaVal=cuotaFechas[l.id]||'';
+    const tieneFecha=!!fechaVal;
+    return `<tr>
+      <td><input type="text" value="${e.mes}" style="width:84px;" ${isReadOnly?'disabled':''} onchange="editLoan('${l.id}','mes',this.value)"></td>
+      <td>
+        <input type="date" class="cuota-fecha-input" value="${fechaVal}" ${isReadOnly?'disabled':''}
+          onchange="editCuotaFecha('${l.id}',this.value)"
+          title="Fecha exacta de vencimiento — aparece en el Flujo de Caja diario"
+          style="border-color:${tieneFecha?'var(--green)':'var(--amber)'}">
+        ${tieneFecha?'':'<span style="font-size:9px;color:var(--amber);font-family:IBM Plex Mono,monospace;margin-left:3px;">sin fecha</span>'}
+      </td>
+      <td><input type="text" value="${e.banco}" ${isReadOnly?'disabled':''} onchange="editLoan('${l.id}','banco',this.value)"></td>
+      <td><input type="text" value="${e.concepto}" ${isReadOnly?'disabled':''} onchange="editLoan('${l.id}','concepto',this.value)"></td>
+      <td><input type="number" value="${e.monto_ars||''}" placeholder="ARS" ${isReadOnly?'disabled':''} onchange="editLoan('${l.id}','monto_ars',this.value)"></td>
+      <td><input type="number" value="${e.monto_usd||''}" placeholder="USD" ${isReadOnly?'disabled':''} onchange="editLoan('${l.id}','monto_usd',this.value)"></td>
+      <td style="font-family:'IBM Plex Mono',monospace;white-space:nowrap;">$ ${fmt(tot)}</td>
+      <td>${isReadOnly?'':'<button class="del-btn" onclick="delLoan(\''+l.id+'\')">✕</button>'}</td>
+    </tr>`;
+  }).join('');
+  return `
+  <div class="info-note">La columna <b>FECHA EXACTA VTO.</b> (verde = asignada, naranja = pendiente) hace que la cuota aparezca en el día correcto del Flujo de Caja diario.</div>
+  <div class="flow-table-wrap"><table class="sub-table">
+    <thead><tr><th>MES</th><th>FECHA EXACTA VTO.</th><th>BANCO/ENTIDAD</th><th>CONCEPTO</th><th>MONTO ARS</th><th>MONTO USD</th><th>TOTAL ARS</th><th></th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>
+  ${isReadOnly?'':'<button class="add-row-btn" onclick="addLoan()">+ Agregar cuota</button>'}`;
+}
+
+function editCuotaFecha(id,val){
+  if(isReadOnly)return;
+  if(val) cuotaFechas[id]=val;
+  else delete cuotaFechas[id];
+  scheduleFirestoreSave();
+  renderTabContent();
+}
+function renderEgresosMod(){
+  return Object.entries(egresoModules).map(([modKey,mod])=>{
+    const grand=MONTHS.reduce((a,{key})=>a+getEgresoMod(key,modKey),0);
+    const curMk=MONTHS[currentMonthIdx];
+    const mdata=mod.items.find(i=>i.key===curMk.key);
+    const subRows=mdata?mdata.subItems.map((s,si)=>`<tr>
+      <td><input type="text" value="${s.concepto}" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'concepto',this.value)"></td>
+      <td><input type="number" value="${s.monto||0}" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'monto',this.value)"></td>
+      <td>${isReadOnly?'':'<button class="del-btn" onclick="delEgreso(\''+modKey+'\',\''+curMk.key+'\','+si+')">✕</button>'}</td>
+    </tr>`).join(''):'';
+    return `<div class="section" style="margin-bottom:10px;">
+      <div class="section-header" onclick="toggleSection('eg-${modKey}')">
+        <h3>${mod.label.toUpperCase()}</h3>
+        <div class="stotals"><span>Total período: <b>$ ${fmt(grand)}</b></span></div>
+      </div>
+      <div class="section-body" id="eg-${modKey}">
+        <div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+          <span class="info-note" style="margin:0;">Mes:</span>
+          <select onchange="setMonthEg(this.value)" style="font-size:12px;font-family:'IBM Plex Mono',monospace;padding:4px 7px;border:0.5px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);">
+            ${MONTHS.map((mk,i)=>`<option value="${i}" ${i===currentMonthIdx?'selected':''}>${MN[mk.m].substring(0,3).toUpperCase()} ${mk.y}</option>`).join('')}
+          </select>
+        </div>
+        <table class="sub-table"><tr><th>SUBCONCEPTO</th><th>MONTO ARS</th><th></th></tr>${subRows}</table>
+        ${isReadOnly?'':'<button class="add-row-btn" onclick="addEgreso(\''+modKey+'\',\''+curMk.key+'\')">+ Agregar subconcepto</button>'}
+        <div class="year-mini">${[2026,2027,2028,2029,2030].map(y=>{const t=MONTHS.filter(mk=>mk.y===y).reduce((a,mk)=>a+getEgresoMod(mk.key,modKey),0);return `<div class="metric"><div class="ml">${y}</div><div class="mv" style="font-size:13px;">$ ${fmt(t)}</div></div>`;}).join('')}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function bindCharts(flow){
+  if(currentTab==='anual'){
+    setTimeout(()=>{
+      const byYear={};
+      MONTHS.forEach(({key,y})=>{if(!byYear[y])byYear[y]={ing:0,egr:0,neto:0};byYear[y].ing+=flow[key].ingTotalArs;byYear[y].egr+=flow[key].egr;byYear[y].neto+=flow[key].neto;});
+      const years=Object.keys(byYear);
+      const ctx=document.getElementById('anualChart');if(!ctx)return;
+      if(window._anualChart)window._anualChart.destroy();
+      window._anualChart=new Chart(ctx,{type:'bar',
+        data:{labels:years,datasets:[
+          {label:'Ingresos',data:years.map(y=>byYear[y].ing/1e6),backgroundColor:'#1A6B4A',borderWidth:0,borderRadius:3},
+          {label:'Egresos',data:years.map(y=>byYear[y].egr/1e6),backgroundColor:'#8B2020',borderWidth:0,borderRadius:3},
+          {type:'line',label:'Neto',data:years.map(y=>byYear[y].neto/1e6),borderColor:'#1A3F7A',borderWidth:2,pointRadius:4,fill:false,borderDash:[5,3]}
+        ]},
+        options:{responsive:true,maintainAspectRatio:false,
+          plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`$ ${c.raw.toFixed(1)} M`},backgroundColor:'#1C1A14',titleFont:{family:'IBM Plex Mono'},bodyFont:{family:'IBM Plex Mono'}}},
+          scales:{y:{ticks:{callback:v=>`$ ${v.toFixed(0)} M`,font:{family:'IBM Plex Mono',size:10}},grid:{color:'rgba(28,26,20,0.06)'}},x:{ticks:{font:{family:'IBM Plex Mono',size:10}},grid:{display:false}}}}
+      });
+    },120);
+  }
+}
+// ============================================================
+// INTERACCIÓN
+// ============================================================
+// FLUJO DE CAJA DIARIO — RENDER Y LÓGICA
+// ============================================================
+function getCajaDias(){
+  const dias=[];const hoy=new Date();hoy.setHours(0,0,0,0);
+  for(let i=0;i<30;i++){
+    const d=new Date(hoy);d.setDate(hoy.getDate()+i);
+    const fecha=d.toISOString().split('T')[0];
+    const mesKey=fecha.substring(0,7);
+    dias.push({fecha,mesKey,d,esHoy:i===0});
+  }
+  return dias;
+}
+
+function getCajaMovsDia(fechaKey){
+  const movs=[];const mesKey=fechaKey.substring(0,7);
+  const tcMin=getTcMin();const tcMay=getTcMay();
+  // 1. Cuotas con fecha exacta asignada
+  const allLoans=[...LOANS,...extraLoans];
+  allLoans.forEach(l=>{
+    const e=loanEdits[l.id]||l;
+    if(cuotaFechas[l.id]===fechaKey){
+      const monto_ars=(e.monto_ars||0)+(e.monto_usd||0)*tcMin;
+      const monto_usd=e.monto_usd||0;
+      if(monto_ars>0||monto_usd>0)
+        movs.push({id:'cuota_'+l.id,tipo:'egreso_fijo',concepto:e.concepto,banco:e.banco,monto_ars,monto_usd,origen:'cuota'});
+    }
+  });
+  // 2. Egresos de módulos — solo en día 1 del mes
+  const diaNum=parseInt(fechaKey.split('-')[2]);
+  if(diaNum===1){
+    Object.entries(egresoModules).forEach(([modKey,mod])=>{
+      const mdata=mod.items.find(i=>i.key===mesKey);if(!mdata)return;
+      mdata.subItems.forEach(s=>{
+        if(+s.monto>0)
+          movs.push({id:'egr_'+modKey+'_'+s.id,tipo:'egreso_variable',concepto:s.concepto,banco:mod.label,monto_ars:+s.monto,monto_usd:0,origen:'modulo'});
+      });
+    });
+  }
+  // 3. Ventas reales confirmadas en este día
+  ventasReales.filter(v=>v.fecha===fechaKey).forEach(v=>{
+    const px=getGrainPrice(v.grano,mesKey).v;
+    const precioUsd=+v.precio_usd||px;
+    const totalUsd=(+v.toneladas||0)*precioUsd;
+    movs.push({id:'vr_'+v.id,tipo:'ingreso',concepto:`Venta ${v.grano.toUpperCase()} ${fmt(+v.toneladas,2)} tn @ U$S ${fmt(precioUsd,2)}`,banco:'',monto_ars:totalUsd*tcMay,monto_usd:totalUsd,origen:'venta_real'});
+  });
+  // 4. Movimientos manuales del usuario
+  cajaMovimientos.filter(m=>m.fecha===fechaKey).forEach(m=>{
+    movs.push({id:'man_'+m.id,tipo:m.tipo,concepto:m.concepto,banco:'',monto_ars:+m.monto_ars||0,monto_usd:+m.monto_usd||0,origen:'manual',obs:m.obs,rawId:m.id});
+  });
+  return movs;
+}
+
+function calcCajaFlow(){
+  const dias=getCajaDias();
+  let saldoArs=cajaInicial.ars||0,saldoUsd=cajaInicial.usd||0;
+  return dias.map(dia=>{
+    const movs=getCajaMovsDia(dia.fecha);
+    let deltaArs=0,deltaUsd=0;
+    movs.forEach(m=>{
+      const sign=m.tipo==='ingreso'?1:-1;
+      deltaArs+=sign*Math.abs(m.monto_ars||0);
+      deltaUsd+=sign*Math.abs(m.monto_usd||0);
+    });
+    saldoArs=r2(saldoArs+deltaArs);saldoUsd=r2(saldoUsd+deltaUsd);
+    return{...dia,movs,saldoArs,saldoUsd,deltaArs,
+      hayVtos:movs.some(m=>m.origen==='cuota'),
+      hayIngresos:movs.some(m=>m.tipo==='ingreso'),
+      necesitaVenta:saldoArs<0&&!movs.some(m=>m.tipo==='ingreso')};
+  });
+}
+
+function renderCaja(){
+  const cf=calcCajaFlow();
+  const DN=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const MES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const last=cf[cf.length-1];
+  const diasDef=cf.filter(d=>d.saldoArs<0).length;
+  const diasVto=cf.filter(d=>d.hayVtos).length;
+  const cuotasSinFecha=[...LOANS,...extraLoans].filter(l=>{const e=loanEdits[l.id]||l;return ((e.monto_ars||0)+(e.monto_usd||0))>0&&!cuotaFechas[l.id];});
+
+  const saldoPanel=`
+  <div class="caja-saldo-panel">
+    <div class="saldo-card">
+      <h5>SALDO INICIAL CAJA ARS (HOY)</h5>
+      <input type="number" step="1000" value="${cajaInicial.ars||0}" ${isReadOnly?'disabled':''} onchange="setCajaInicial('ars',this.value)" placeholder="$ 0">
+    </div>
+    <div class="saldo-card">
+      <h5>SALDO INICIAL CAJA USD (HOY)</h5>
+      <input type="number" step="100" value="${cajaInicial.usd||0}" ${isReadOnly?'disabled':''} onchange="setCajaInicial('usd',this.value)" placeholder="U$S 0">
+    </div>
+    <div class="saldo-card" style="flex:2;min-width:260px;">
+      <h5>RESUMEN 30 DÍAS</h5>
+      <div style="display:flex;gap:14px;font-family:'IBM Plex Mono',monospace;font-size:11px;margin-top:5px;flex-wrap:wrap;">
+        <span>Saldo ARS final: <b style="color:${last.saldoArs>=0?'var(--green)':'var(--red)'}">$ ${fmt(last.saldoArs)}</b></span>
+        <span>Saldo USD final: <b style="color:${last.saldoUsd>=0?'var(--green)':'var(--red)'}">U$S ${fmt(last.saldoUsd,2)}</b></span>
+        <span>Días con vto: <b>${diasVto}</b></span>
+        <span>Días saldo negativo: <b style="color:${diasDef>0?'var(--red)':'var(--green)'}">${diasDef}</b></span>
+      </div>
+    </div>
+  </div>`;
+
+  const avisoFechas=cuotasSinFecha.length>0?`
+  <div style="background:var(--amber-bg);border:0.5px solid #D4A853;border-radius:6px;padding:8px 14px;font-size:11px;color:var(--amber);font-family:'IBM Plex Mono',monospace;margin-bottom:12px;display:flex;align-items:flex-start;gap:8px;">
+    <span>⚠</span><div><b>${cuotasSinFecha.length}</b> cuota(s) sin fecha exacta — asignalas en la pestaña <b>CUOTAS CREDITICIAS</b> para que aparezcan aquí en el día correcto.</div>
+  </div>`:'' ;
+
+  const renderMovGroup=(titulo,lista,colorClass)=>{
+    if(!lista.length)return'';
+    return`<div class="caja-mov-group">
+      <div class="caja-mov-group-title">${titulo}</div>
+      ${lista.map(m=>`<div class="caja-mov-row">
+        <div class="caja-mov-concepto">
+          <span class="mov-tag ${colorClass}">${m.origen==='cuota'?m.banco:m.origen==='venta_real'?'GRANO':'MANUAL'}</span>
+          ${m.concepto}${m.obs?` <span style="color:var(--text3);font-size:10px;">(${m.obs})</span>`:''}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div>
+            ${m.monto_ars?`<div class="caja-mov-monto ${colorClass==='ingreso'?'pos':'neg'}">${colorClass==='ingreso'?'+ ':'- '}$ ${fmt(Math.abs(m.monto_ars))}</div>`:''}
+            ${m.monto_usd?`<div class="caja-mov-monto ${colorClass==='ingreso'?'pos':'neg'}" style="font-size:10px;">${colorClass==='ingreso'?'+ ':'- '}U$S ${fmt(Math.abs(m.monto_usd),2)}</div>`:''}
+          </div>
+          ${m.origen==='manual'&&!isReadOnly?`<button class="del-btn" onclick="delCajaMov('${m.rawId}')">✕</button>`:''}
+        </div>
+      </div>`).join('')}
+    </div>`;
+  };
+
+  const diasHtml=cf.map((dia,idx)=>{
+    const label=`${DN[dia.d.getDay()]} ${dia.d.getDate()} ${MES[dia.d.getMonth()]}`;
+    const tieneMovs=dia.movs.length>0;
+    const semaforo=dia.saldoArs<0?'rojo':dia.saldoArs<(cajaInicial.ars||0)*0.15?'warn':'ok';
+    const hCls=`caja-day-header${dia.esHoy?' hoy':''}${tieneMovs?' tiene-movs':''}${dia.saldoArs<0?' deficit-dia':''}`;
+    const bodyId=`cajabody_${idx}`;
+    const bodyOpen=dia.esHoy||(dia.hayVtos&&idx<7);
+    const badges=[
+      dia.hayVtos?`<span class="caja-badge vto">VENCIMIENTO</span>`:'',
+      dia.hayIngresos?`<span class="caja-badge ingreso">INGRESO</span>`:'',
+      dia.movs.some(m=>m.origen==='manual')?`<span class="caja-badge gasto">MANUAL</span>`:'',
+    ].filter(Boolean).join('');
+
+    const movsEgresoFijo=dia.movs.filter(m=>m.origen==='cuota');
+    const movsEgresoVar=dia.movs.filter(m=>m.origen==='modulo'||(m.origen==='manual'&&m.tipo==='egreso_variable'));
+    const movsIngreso=dia.movs.filter(m=>m.tipo==='ingreso');
+
+    const alertaVenta=dia.necesitaVenta?`
+    <div class="caja-necesita-venta">
+      ⚠ Saldo negativo al cierre — considerá realizar una venta de granos.
+      ${!isReadOnly?`<button class="confirm-venta-btn" style="margin-left:auto;" onclick="openModalVenta(null)">+ Registrar venta</button>`:''}
+    </div>`:'';
+
+    const formMov=isReadOnly?'':`
+    <div class="caja-add-mov" style="margin-top:10px;padding-top:8px;border-top:0.5px solid var(--border);">
+      <select id="cajaTipo_${dia.fecha}" style="width:90px;">
+        <option value="egreso_variable">Egreso</option>
+        <option value="ingreso">Ingreso</option>
+      </select>
+      <input type="text" id="cajaConc_${dia.fecha}" placeholder="Concepto" style="flex:1;min-width:120px;">
+      <input type="number" id="cajaMtoArs_${dia.fecha}" placeholder="$ ARS" step="100" style="width:110px;">
+      <input type="number" id="cajaMtoUsd_${dia.fecha}" placeholder="U$S" step="10" style="width:90px;">
+      <input type="text" id="cajaObs_${dia.fecha}" placeholder="Obs." style="width:110px;">
+      <button class="caja-add-btn" onclick="addCajaMov('${dia.fecha}')">+ Agregar</button>
+    </div>`;
+
+    return`<div class="caja-day">
+      <div class="${hCls}" onclick="toggleSection('${bodyId}')">
+        <div class="caja-day-label">
+          <span class="caja-semaforo ${semaforo}"></span>
+          <span class="dia-num">${dia.d.getDate()}</span>
+          <div>
+            <div style="font-size:12px;font-weight:600;">${label}${dia.esHoy?' <span style="font-size:9px;background:rgba(255,255,255,.18);padding:1px 6px;border-radius:3px;margin-left:4px;letter-spacing:.04em;">HOY</span>':''}</div>
+            <div class="caja-day-badges">${badges||'<span style="font-size:10px;color:var(--text3);font-family:IBM Plex Mono,monospace;">Sin movimientos</span>'}</div>
+          </div>
+        </div>
+        <div class="caja-day-saldo">
+          <div style="color:${dia.saldoArs>=0?'var(--green)':'var(--red)'}">$ ${fmt(dia.saldoArs)}</div>
+          <div class="saldo-usd">U$S ${fmt(dia.saldoUsd,2)}</div>
+        </div>
+      </div>
+      <div class="caja-day-body${bodyOpen?' open':''}" id="${bodyId}">
+        ${renderMovGroup('VENCIMIENTOS CREDITICIOS',movsEgresoFijo,'banco')}
+        ${renderMovGroup('EGRESOS OPERATIVOS',movsEgresoVar,'egreso')}
+        ${renderMovGroup('INGRESOS',movsIngreso,'ingreso')}
+        ${alertaVenta}
+        ${formMov}
+      </div>
+    </div>`;
+  }).join('');
+
+  return`
+  <div class="caja-header">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text2);">FLUJO DE CAJA — PRÓXIMOS 30 DÍAS</div>
+    <div style="font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">TC min: $ ${fmt(getTcMin(),2)} · TC may: $ ${fmt(getTcMay(),2)}</div>
+  </div>
+  ${saldoPanel}${avisoFechas}${diasHtml}`;
+}
+
+function setCajaInicial(moneda,val){
+  if(isReadOnly)return;
+  cajaInicial[moneda]=+val||0;
+  scheduleFirestoreSave();
+  if(currentTab==='caja')renderTabContent();
+}
+
+function addCajaMov(fecha){
+  if(isReadOnly)return;
+  const tipo=document.getElementById('cajaTipo_'+fecha).value;
+  const concepto=document.getElementById('cajaConc_'+fecha).value.trim();
+  const monto_ars=+document.getElementById('cajaMtoArs_'+fecha).value||0;
+  const monto_usd=+document.getElementById('cajaMtoUsd_'+fecha).value||0;
+  const obs=document.getElementById('cajaObs_'+fecha).value.trim();
+  if(!concepto){alert('Ingresá un concepto.');return;}
+  if(!monto_ars&&!monto_usd){alert('Ingresá al menos un monto.');return;}
+  cajaMovimientos.push({id:'cm'+Date.now(),fecha,tipo,concepto,monto_ars,monto_usd,obs,
+    cargadoPor:window._currentUser?window._currentUser.email:'',
+    cargadoEn:new Date().toISOString()});
+  scheduleFirestoreSave();renderTabContent();
+}
+
+function delCajaMov(id){
+  if(isReadOnly)return;
+  if(!confirm('¿Eliminar este movimiento?'))return;
+  cajaMovimientos=cajaMovimientos.filter(m=>m.id!==id);
+  scheduleFirestoreSave();renderTabContent();
+}
+
+// ============================================================
+function toggleSection(id){const el=document.getElementById(id);if(el)el.classList.toggle('open');}
+function prevMonth(){if(currentMonthIdx>0){currentMonthIdx--;renderAll();}}
+function nextMonth(){if(currentMonthIdx<MONTHS.length-1){currentMonthIdx++;renderAll();}}
+function jumpMonth(v){currentMonthIdx=+v;renderAll();}
+function setMonthEg(v){currentMonthIdx=+v;renderTabContent();}
+
+// ============================================================
+// STOCK INICIAL EDITABLE
+// ============================================================
+function editStockInicial(grano, val){
+  if(isReadOnly)return;
+  STOCK_INICIAL[grano]=Math.max(0,+val||0);
+  scheduleFirestoreSave();renderAll();
+}
+
+// ============================================================
+// MODAL VENTA REAL
+// ============================================================
+function openModalVenta(mesKey){
+  if(isReadOnly)return;
+  const modal=document.getElementById('modalVenta');
+  modal.style.display='flex';
+  // Pre-seleccionar fecha del mes si viene de una fila
+  if(mesKey){
+    const [y,m]=mesKey.split('-');
+    // Poner el primer día del mes como fecha sugerida
+    document.getElementById('mvFecha').value=`${y}-${m}-01`;
+  } else {
+    document.getElementById('mvFecha').value=new Date().toISOString().split('T')[0];
+  }
+  document.getElementById('mvToneladas').value='';
+  document.getElementById('mvPrecio').value='';
+  document.getElementById('mvObs').value='';
+  document.getElementById('mvResumen').style.display='none';
+  document.getElementById('mvGrano').value='soja';
+  // Actualizar resumen al cambiar campos
+  ['mvGrano','mvFecha','mvToneladas','mvPrecio'].forEach(id=>{
+    document.getElementById(id).oninput=actualizarResumenModal;
+    document.getElementById(id).onchange=actualizarResumenModal;
+  });
+}
+
+function actualizarResumenModal(){
+  const tn=+document.getElementById('mvToneladas').value||0;
+  const precio=+document.getElementById('mvPrecio').value||0;
+  const grano=document.getElementById('mvGrano').value;
+  const resEl=document.getElementById('mvResumen');
+  if(tn>0&&precio>0){
+    const totalUsd=tn*precio;
+    const totalArs=totalUsd*getTcMay();
+    const stockDisp=grano==='soja'?
+      Math.max(0,STOCK_INICIAL.soja-ventasReales.filter(v=>v.grano==='soja').reduce((a,v)=>a+(+v.toneladas||0),0)):
+      Math.max(0,STOCK_INICIAL.maiz-ventasReales.filter(v=>v.grano==='maiz').reduce((a,v)=>a+(+v.toneladas||0),0));
+    const alertaStock=tn>stockDisp?`<div style="color:var(--red);margin-top:4px;">⚠ Superás el stock disponible (${fmt(stockDisp,2)} tn)</div>`:'';
+    resEl.innerHTML=`Total: <b>U$S ${fmt(totalUsd,2)}</b> · <b>$ ${fmt(totalArs)}</b> (TC may. $ ${fmt(getTcMay(),2)})<br>Stock ${grano} disponible: ${fmt(stockDisp,2)} tn${alertaStock}`;
+    resEl.style.display='block';
+  } else {
+    resEl.style.display='none';
+  }
+}
+
+function closeModalVenta(){
+  document.getElementById('modalVenta').style.display='none';
+}
+
+function confirmarVenta(){
+  const grano=document.getElementById('mvGrano').value;
+  const fecha=document.getElementById('mvFecha').value;
+  const tn=+document.getElementById('mvToneladas').value;
+  const precio=+document.getElementById('mvPrecio').value;
+  const obs=document.getElementById('mvObs').value.trim();
+
+  if(!fecha){alert('Ingresá la fecha de la venta.');return;}
+  if(!tn||tn<=0){alert('Ingresá las toneladas vendidas.');return;}
+  if(!precio||precio<=0){alert('Ingresá el precio de venta.');return;}
+
+  // Calcular mes YYYY-MM de la fecha
+  const mes=fecha.substring(0,7);
+
+  const venta={
+    id: 'vr'+Date.now(),
+    grano,
+    fecha,
+    mes,
+    toneladas: tn,
+    precio_usd: precio,
+    obs,
+    registradoPor: window._currentUser?window._currentUser.email:'anónimo',
+    registradoEn: new Date().toISOString()
+  };
+
+  ventasReales.push(venta);
+  closeModalVenta();
+  scheduleFirestoreSave();
+  renderAll();
+  // Ir al historial para que vea el resultado
+  setTab('historial');
+}
+
+function eliminarVentaReal(id){
+  if(isReadOnly)return;
+  if(!confirm('¿Confirmás que querés eliminar esta venta del historial?'))return;
+  ventasReales=ventasReales.filter(v=>v.id!==id);
+  scheduleFirestoreSave();renderAll();
+}
+function setPriceOv(key,grain,val){if(isReadOnly)return;grainOverride[grain][key]=val===''?null:+val;scheduleFirestoreSave();renderAll();}
+function setVentaOv(key,grain,val){if(isReadOnly)return;ventaOverrides[key][grain]=val===''?null:+val;scheduleFirestoreSave();renderAll();}
+function editLoan(id,field,val){
+  if(isReadOnly)return;
+  if(!loanEdits[id]){const l=LOANS.find(x=>x.id===id)||extraLoans.find(x=>x.id===id);if(l)loanEdits[id]={...l};}
+  if(!loanEdits[id])loanEdits[id]={};
+  loanEdits[id][field]=(field==='monto_ars'||field==='monto_usd')?(val===''?null:+val):val;
+  scheduleFirestoreSave();renderAll();
+}
+function addLoan(){
+  if(isReadOnly)return;
+  const id='ex'+Date.now();const l={id,banco:'',concepto:'',mes:MONTHS[currentMonthIdx].key,monto_ars:null,monto_usd:null};
+  extraLoans.push(l);loanEdits[id]={...l};scheduleFirestoreSave();setTab('creditos');
+}
+function delLoan(id){
+  if(isReadOnly)return;
+  let i=LOANS.findIndex(l=>l.id===id);if(i>=0){LOANS.splice(i,1);delete loanEdits[id];}
+  i=extraLoans.findIndex(l=>l.id===id);if(i>=0){extraLoans.splice(i,1);delete loanEdits[id];}
+  scheduleFirestoreSave();renderAll();
+}
+function editEgreso(modKey,key,si,field,val){
+  if(isReadOnly)return;
+  const mdata=egresoModules[modKey].items.find(i=>i.key===key);
+  if(mdata&&mdata.subItems[si])mdata.subItems[si][field]=field==='monto'?(+val||0):val;
+  scheduleFirestoreSave();renderAll();
+}
+function addEgreso(modKey,key){
+  if(isReadOnly)return;
+  const mdata=egresoModules[modKey].items.find(i=>i.key===key);
+  if(mdata){mdata.subItems.push({id:'n'+Date.now(),concepto:'Nuevo ítem',monto:0});scheduleFirestoreSave();renderTabContent();}
+}
+function delEgreso(modKey,key,si){
+  if(isReadOnly)return;
+  const mdata=egresoModules[modKey].items.find(i=>i.key===key);
+  if(mdata)mdata.subItems.splice(si,1);scheduleFirestoreSave();renderAll();
+}
+function exportCSV(){
+  const flow=calcFlow();
+  let csv='Mes,Soja tn,Maiz tn,Ingresos USD,Ingresos ARS,TC May,TC Min,Cuotas ARS,Operativos,Produccion,Comercializacion,Arrendamientos,Estructura,Total Egresos,Neto,Acumulado,Deficit,Stock Soja,Stock Maiz\n';
+  MONTHS.forEach(({key,y,m})=>{
+    const f=flow[key];
+    const mods=['operativos','produccion','comercializacion','arrendamientos','estructura'].map(mk=>getEgresoMod(key,mk));
+    csv+=`${MN[m]} ${y},${f.vendSoja.toFixed(2)},${f.vendMaiz.toFixed(2)},${f.ingTotalUsd.toFixed(2)},${f.ingTotalArs.toFixed(0)},${getTcMay()},${getTcMin()},${getLoanTotal(key).toFixed(0)},${mods.join(',')},${f.egr.toFixed(0)},${f.neto.toFixed(0)},${f.acum.toFixed(0)},${f.deficit.toFixed(0)},${f.stockSojaPost.toFixed(2)},${f.stockMaizPost.toFixed(2)}\n`;
+  });
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download='flujo_fondos_agropecuario.csv';a.click();
+}
+// ============================================================
+// BARRA DE SCROLL HORIZONTAL FIJA — sincronizada con tablas anchas
+// ============================================================
+(function(){
+  const bar = document.getElementById('scrollBar');
+  const inner = document.getElementById('scrollBarInner');
+  let activeWrap = null;
+  let syncing = false;
+
+  function syncBarFromWrap(){
+    if(syncing||!activeWrap) return;
+    syncing=true;
+    bar.scrollLeft = activeWrap.scrollLeft;
+    syncing=false;
+  }
+  function syncWrapFromBar(){
+    if(syncing||!activeWrap) return;
+    syncing=true;
+    activeWrap.scrollLeft = bar.scrollLeft;
+    syncing=false;
+  }
+
+  function attachToWrap(wrap){
+    if(activeWrap) activeWrap.removeEventListener('scroll',syncBarFromWrap);
+    activeWrap = wrap;
+    if(!wrap){bar.style.display='none';return;}
+    // Ajustar ancho interno de la barra al contenido de la tabla
+    const tableWidth = wrap.scrollWidth;
+    inner.style.width = tableWidth + 'px';
+    bar.style.display = tableWidth > wrap.clientWidth ? 'block' : 'none';
+    bar.scrollLeft = wrap.scrollLeft;
+    wrap.addEventListener('scroll', syncBarFromWrap);
+  }
+
+  bar.addEventListener('scroll', syncWrapFromBar);
+
+  // Detectar qué tabla está visible al hacer scroll de la página
+  function updateActiveWrap(){
+    const wraps = document.querySelectorAll('.flow-table-wrap');
+    let found = null;
+    wraps.forEach(w=>{
+      const rect = w.getBoundingClientRect();
+      // Está visible si su parte inferior está por encima del fold y su top está en pantalla
+      if(rect.top < window.innerHeight && rect.bottom > 60 && w.scrollWidth > w.clientWidth){
+        // Preferir la que ocupa más pantalla
+        if(!found || rect.height > found.getBoundingClientRect().height) found = w;
+      }
+    });
+    if(found !== activeWrap) attachToWrap(found);
+    else if(found){
+      // Actualizar ancho por si cambió el contenido
+      inner.style.width = found.scrollWidth + 'px';
+      bar.style.display = found.scrollWidth > found.clientWidth ? 'block' : 'none';
+    }
+  }
+
+  window.addEventListener('scroll', updateActiveWrap, {passive:true});
+  window.addEventListener('resize', updateActiveWrap, {passive:true});
+
+  // Actualizar cada vez que se renderiza una pestaña nueva
+  const origRenderTabContent = window.renderTabContentHook || (()=>{});
+  window._onTabRender = function(){
+    setTimeout(updateActiveWrap, 150);
+  };
+})();
+
+// INIT
+renderAll();
+fetchAllData();
+setInterval(fetchAllData,5*60*1000);
+</script>
+</body>
+</html>
