@@ -1,6 +1,5 @@
 // netlify/functions/futuros-agro.js
 // Trae futuros agropecuarios (soja y maíz Rosario) desde IOL invertironline
-// Credenciales: variables de entorno IOL_USUARIO e IOL_CONTRASENA en Netlify
 
 export async function handler(event, context) {
   const headers = {
@@ -14,7 +13,6 @@ export async function handler(event, context) {
     return { statusCode: 200, headers, body: "" };
   }
 
-  // Precios de referencia usados como fallback (actualizar periódicamente)
   const FALLBACK = {
     soja: {
       "2026-07": 335, "2026-09": 337.7, "2026-11": 343,
@@ -33,97 +31,90 @@ export async function handler(event, context) {
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({
-        ok: true,
-        source: "fallback_static",
-        soja: FALLBACK.soja,
-        maiz: FALLBACK.maiz,
-        nota: "Sin credenciales IOL — usando precios de referencia. Configurá IOL_USUARIO e IOL_CONTRASENA en Netlify.",
-        timestamp: new Date().toISOString(),
-      }),
+      body: JSON.stringify({ ok: true, source: "fallback_static", ...FALLBACK, timestamp: new Date().toISOString() }),
     };
   }
 
+  // Tickers IOL para soja y maíz Rosario (mercado ROFX)
+  const TICKER_MAP_SOJA = {
+    "SOJJUL26": "2026-07", "SOJSEP26": "2026-09", "SOJNOV26": "2026-11",
+    "SOJENE27": "2027-01", "SOJMAR27": "2027-03", "SOJMAY27": "2027-05", "SOJJUL27": "2027-07",
+  };
+  const TICKER_MAP_MAIZ = {
+    "MAIJUL26": "2026-07", "MAISEP26": "2026-09", "MAINOV26": "2026-11",
+    "MAIENE27": "2027-01", "MAIMAR27": "2027-03", "MAIMAY27": "2027-05",
+  };
+
   try {
-    // PASO 1 — Obtener token IOL
+    // Token IOL
     const tokenRes = await fetch("https://api.invertironline.com/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        username: IOL_USER,
-        password: IOL_PASS,
-        grant_type: "password",
-      }),
-      signal: AbortSignal.timeout(12000),
+      body: new URLSearchParams({ username: IOL_USER, password: IOL_PASS, grant_type: "password" }),
+      signal: AbortSignal.timeout(8000),
     });
-
-    if (!tokenRes.ok) {
-      const errText = await tokenRes.text().catch(() => "");
-      throw new Error(`Token IOL error HTTP ${tokenRes.status}: ${errText.slice(0,200)}`);
-    }
-
-    const tokenData = await tokenRes.json();
-    const token = tokenData.access_token;
-    if (!token) throw new Error("IOL no devolvió access_token");
-
-    // PASO 2 — Tickers de soja y maíz Rosario en IOL (mercado ROFX)
-    // Formato: PRODUCTO + MES_3LETRAS_ESP + AÑO_2DIG
-    // Soja: SOJ + mes + año | Maíz: MAI + mes + año
-    const TICKERS_SOJA = {
-      "2026-07": "SOJJUL26",
-      "2026-09": "SOJSEP26",
-      "2026-11": "SOJNOV26",
-      "2027-01": "SOJENE27",
-      "2027-03": "SOJMAR27",
-      "2027-05": "SOJMAY27",
-      "2027-07": "SOJJUL27",
-    };
-    const TICKERS_MAIZ = {
-      "2026-07": "MAIJUL26",
-      "2026-09": "MAISEP26",
-      "2026-11": "MAINOV26",
-      "2027-01": "MAIENE27",
-      "2027-03": "MAIMAR27",
-      "2027-05": "MAIMAY27",
-    };
-
-    const fetchTicker = async (ticker) => {
-      const res = await fetch(
-        `https://api.invertironline.com/api/v2/ROFX/Titulos/${ticker}/Cotizacion`,
-        {
-          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-          signal: AbortSignal.timeout(8000),
-        }
-      );
-      if (!res.ok) return null;
-      const d = await res.json();
-      return d?.ultimoPrecio || d?.precioAjuste || d?.cierreAnterior || null;
-    };
+    if (!tokenRes.ok) throw new Error(`Token HTTP ${tokenRes.status}`);
+    const { access_token: token } = await tokenRes.json();
+    if (!token) throw new Error("Sin access_token");
 
     const sojaData = {};
     const maizData = {};
+    const debug = [];
 
-    const [sojaResults, maizResults] = await Promise.all([
-      Promise.allSettled(
-        Object.entries(TICKERS_SOJA).map(async ([mes, ticker]) => ({
-          mes, precio: await fetchTicker(ticker),
-        }))
-      ),
-      Promise.allSettled(
-        Object.entries(TICKERS_MAIZ).map(async ([mes, ticker]) => ({
-          mes, precio: await fetchTicker(ticker),
-        }))
-      ),
-    ]);
+    // Intentar panel de soja y maíz primero
+    for (const [panelName, tickerMap, dataObj] of [
+      ["futuros_soja", TICKER_MAP_SOJA, sojaData],
+      ["futuros_maiz", TICKER_MAP_MAIZ, maizData],
+    ]) {
+      try {
+        const res = await fetch(
+          `https://api.invertironline.com/api/v2/ROFX/Titulos/Panel/${panelName}`,
+          { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(5000) }
+        );
+        if (res.ok) {
+          const panel = await res.json();
+          const lista = Array.isArray(panel) ? panel : (panel?.titulos || panel?.instrumentos || []);
+          debug.push(`panel ${panelName}: ${lista.length} items`);
+          lista.forEach((t) => {
+            const sym = (t.simbolo || t.ticker || "").toUpperCase().trim();
+            const mesKey = tickerMap[sym];
+            if (mesKey) {
+              const precio = t.ultimoPrecio || t.precioAjuste || t.ultimo || null;
+              if (precio > 0) dataObj[mesKey] = precio;
+            }
+          });
+        }
+      } catch (e) { debug.push(`panel ${panelName} error: ${e.message}`); }
+    }
 
-    sojaResults.forEach((r) => {
-      if (r.status === "fulfilled" && r.value?.precio != null)
-        sojaData[r.value.mes] = r.value.precio;
-    });
-    maizResults.forEach((r) => {
-      if (r.status === "fulfilled" && r.value?.precio != null)
-        maizData[r.value.mes] = r.value.precio;
-    });
+    // Si los paneles no trajeron datos, tickers individuales todos en paralelo
+    if (Object.keys(sojaData).length === 0 && Object.keys(maizData).length === 0) {
+      const allTickers = [
+        ...Object.keys(TICKER_MAP_SOJA).map(t => ({ t, grano: 'soja', map: TICKER_MAP_SOJA })),
+        ...Object.keys(TICKER_MAP_MAIZ).map(t => ({ t, grano: 'maiz', map: TICKER_MAP_MAIZ })),
+      ];
+
+      const results = await Promise.allSettled(
+        allTickers.map(async ({ t, grano, map }) => {
+          const res = await fetch(
+            `https://api.invertironline.com/api/v2/ROFX/Titulos/${t}/Cotizacion`,
+            { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(5000) }
+          );
+          if (!res.ok) return null;
+          const d = await res.json();
+          const precio = d?.ultimoPrecio || d?.precioAjuste || d?.cierreAnterior || null;
+          return precio ? { t, grano, mesKey: map[t], precio } : null;
+        })
+      );
+
+      results.forEach(r => {
+        if (r.status === "fulfilled" && r.value) {
+          const { grano, mesKey, precio } = r.value;
+          if (grano === 'soja') sojaData[mesKey] = precio;
+          else maizData[mesKey] = precio;
+        }
+      });
+    }
 
     const sojaFinal = Object.keys(sojaData).length > 0 ? sojaData : FALLBACK.soja;
     const maizFinal = Object.keys(maizData).length > 0 ? maizData : FALLBACK.maiz;
@@ -133,10 +124,9 @@ export async function handler(event, context) {
       statusCode: 200,
       headers,
       body: JSON.stringify({
-        ok: true,
-        source,
-        soja: sojaFinal,
-        maiz: maizFinal,
+        ok: true, source,
+        soja: sojaFinal, maiz: maizFinal,
+        debug,
         timestamp: new Date().toISOString(),
       }),
     };
@@ -145,10 +135,8 @@ export async function handler(event, context) {
       statusCode: 200,
       headers,
       body: JSON.stringify({
-        ok: true,
-        source: "fallback_error",
-        soja: FALLBACK.soja,
-        maiz: FALLBACK.maiz,
+        ok: true, source: "fallback_error",
+        soja: FALLBACK.soja, maiz: FALLBACK.maiz,
         error: error.message,
         timestamp: new Date().toISOString(),
       }),
