@@ -1,5 +1,6 @@
 // netlify/functions/futuros-financieros.js
-// Proxy para traer futuros financieros (dólar futuro Rofex) de A3 Mercados
+// Futuros financieros (dólar Rofex) desde Primary/reMarkets API
+// Credenciales: PRIMARY_USER y PRIMARY_PASS en Netlify environment variables
 
 export async function handler(event, context) {
   const headers = {
@@ -13,60 +14,98 @@ export async function handler(event, context) {
     return { statusCode: 200, headers, body: "" };
   }
 
-  try {
-    const BASE = "https://matbarofex.primary.ventures";
+  const PRIMARY_USER = process.env.PRIMARY_USER;
+  const PRIMARY_PASS = process.env.PRIMARY_PASS;
 
-    const pageRes = await fetch(`${BASE}/fyo/futurosfinancieros`, {
+  if (!PRIMARY_USER || !PRIMARY_PASS) {
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        ok: false,
+        error: "Credenciales Primary no configuradas. Agregá PRIMARY_USER y PRIMARY_PASS en Netlify.",
+        timestamp: new Date().toISOString(),
+      }),
+    };
+  }
+
+  // Tickers de dólar futuro en Primary/reMarkets
+  // Formato: DLR/MES26 donde MES = ENE,FEB,MAR,ABR,MAY,JUN,JUL,AGO,SEP,OCT,NOV,DIC
+  const TICKERS = {
+    "2026-06": "DLR/JUN26",
+    "2026-07": "DLR/JUL26",
+    "2026-08": "DLR/AGO26",
+    "2026-09": "DLR/SEP26",
+    "2026-10": "DLR/OCT26",
+    "2026-11": "DLR/NOV26",
+    "2026-12": "DLR/DIC26",
+    "2027-01": "DLR/ENE27",
+    "2027-02": "DLR/FEB27",
+    "2027-03": "DLR/MAR27",
+    "2027-04": "DLR/ABR27",
+    "2027-05": "DLR/MAY27",
+    "2027-06": "DLR/JUN27",
+    "2027-07": "DLR/JUL27",
+    "2027-08": "DLR/AGO27",
+    "2027-09": "DLR/SEP27",
+    "2027-10": "DLR/OCT27",
+    "2027-11": "DLR/NOV27",
+    "2027-12": "DLR/DIC27",
+  };
+
+  try {
+    // PASO 1 — Obtener token de Primary
+    // El token viene en el header X-Auth-Token, no en el body
+    const tokenRes = await fetch("https://api.remarkets.primary.com.ar/auth/getToken", {
+      method: "POST",
       headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "es-AR,es;q=0.9",
+        "Content-Type": "application/json; charset=utf-8",
+        "X-Username": PRIMARY_USER,
+        "X-Password": PRIMARY_PASS,
       },
       signal: AbortSignal.timeout(8000),
     });
 
-    if (!pageRes.ok) throw new Error(`A3 financieros returned ${pageRes.status}`);
+    if (!tokenRes.ok) {
+      throw new Error(`Auth Primary HTTP ${tokenRes.status}`);
+    }
 
-    const html = await pageRes.text();
+    const token = tokenRes.headers.get("X-Auth-Token");
+    if (!token) throw new Error("Primary no devolvió X-Auth-Token");
 
-    // Extraer filas de dólar futuro
-    // Formato: DLR/MMMYY con precio de ajuste
-    const dolarData = {};
+    // PASO 2 — Consultar todos los tickers en paralelo
+    const dolarFuturo = {};
 
-    const rows = html.match(/DLR[^<]{0,300}/g) || [];
+    const results = await Promise.allSettled(
+      Object.entries(TICKERS).map(async ([mesKey, ticker]) => {
+        const res = await fetch(
+          `https://api.remarkets.primary.com.ar/rest/marketdata/get?marketId=ROFX&symbol=${encodeURIComponent(ticker)}&entries=LA,BI,OF,OP,CL,SE,OI`,
+          {
+            headers: {
+              "X-Auth-Token": token,
+              "Content-Type": "application/json",
+            },
+            signal: AbortSignal.timeout(6000),
+          }
+        );
+        if (!res.ok) return null;
+        const d = await res.json();
+        // Buscar precio: último (LA), cierre (CL), settlement (SE)
+        const entries = d?.marketData;
+        if (!entries) return null;
+        const precio =
+          entries.LA?.price ||
+          entries.CL?.price ||
+          entries.SE?.price ||
+          entries.BI?.price ||
+          null;
+        return precio ? { mesKey, precio } : null;
+      })
+    );
 
-    const extractPrice = (text) => {
-      const nums = text.match(/\b(\d{3,5}[.,]\d{1,2})\b/g);
-      if (nums && nums.length > 0) {
-        return parseFloat(nums[nums.length - 1].replace(",", "."));
-      }
-      return null;
-    };
-
-    // Mapeo de meses abreviados a AAAA-MM
-    const mesMap = {
-      ENE: "01", FEB: "02", MAR: "03", ABR: "04",
-      MAY: "05", JUN: "06", JUL: "07", AGO: "08",
-      SEP: "09", OCT: "10", NOV: "11", DIC: "12",
-    };
-
-    rows.forEach((row) => {
-      const price = extractPrice(row);
-      if (!price || price < 500 || price > 50000) return;
-
-      // Buscar patrón de mes/año en la fila
-      for (const [mes, num] of Object.entries(mesMap)) {
-        const match26 = row.match(new RegExp(`${mes}2?6`, "i"));
-        const match27 = row.match(new RegExp(`${mes}2?7`, "i"));
-        const match28 = row.match(new RegExp(`${mes}2?8`, "i"));
-        const match29 = row.match(new RegExp(`${mes}2?9`, "i"));
-        const match30 = row.match(new RegExp(`${mes}3?0`, "i"));
-
-        if (match26) dolarData[`2026-${num}`] = price;
-        if (match27) dolarData[`2027-${num}`] = price;
-        if (match28) dolarData[`2028-${num}`] = price;
-        if (match29) dolarData[`2029-${num}`] = price;
-        if (match30) dolarData[`2030-${num}`] = price;
+    results.forEach((r) => {
+      if (r.status === "fulfilled" && r.value) {
+        dolarFuturo[r.value.mesKey] = r.value.precio;
       }
     });
 
@@ -75,9 +114,9 @@ export async function handler(event, context) {
       headers,
       body: JSON.stringify({
         ok: true,
-        source: "html_scraping",
-        dolar_futuro: dolarData,
-        htmlLength: html.length,
+        source: "Primary_reMarkets",
+        dolar_futuro: dolarFuturo,
+        contratos: Object.keys(dolarFuturo).length,
         timestamp: new Date().toISOString(),
       }),
     };
