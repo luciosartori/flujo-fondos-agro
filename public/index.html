@@ -514,6 +514,8 @@ let LOANS=[...LOANS_DEFAULT.map(l=>({...l}))];
 let loanEdits={};
 LOANS.forEach(l=>{loanEdits[l.id]={...l};});
 let extraLoans=[];
+// IDs de préstamos default eliminados por el usuario — persiste en Firestore
+let deletedLoanIds=new Set();
 
 let egresoModules={
   operativos:{label:'Gastos operativos',items:MONTHS.map(({key})=>({key,subItems:[{id:'op1',concepto:'Combustible',monto:0},{id:'op2',concepto:'Mano de obra',monto:0}]}))},
@@ -590,6 +592,7 @@ async function saveToFirestore(){
     const payload={
       loanEdits,
       extraLoans,
+      deletedLoanIds: [...deletedLoanIds],
       ventaOverrides,
       grainOverride,
       tcOverride,
@@ -606,7 +609,8 @@ async function saveToFirestore(){
       updatedAt: new Date().toISOString(),
       updatedBy: window._currentUser.email
     };
-    await setDoc(doc(db,'flujo','datos'), payload, {merge: true});
+    // merge:false para que los arrays eliminados no queden huérfanos en Firestore
+    await setDoc(doc(db,'flujo','datos'), payload);
     setSaveStatus('saved');
     setTimeout(()=>setSaveStatus('idle'),3000);
   }catch(e){
@@ -629,6 +633,17 @@ window._loadFirestoreData = async function(){
         return;
       }
       const d=snap.data();
+
+      // Restaurar préstamos eliminados por el usuario
+      if(d.deletedLoanIds && Array.isArray(d.deletedLoanIds)){
+        deletedLoanIds = new Set(d.deletedLoanIds);
+        // Eliminar del array LOANS los que el usuario borró
+        d.deletedLoanIds.forEach(id=>{
+          const i=LOANS.findIndex(l=>l.id===id);
+          if(i>=0) LOANS.splice(i,1);
+          delete loanEdits[id];
+        });
+      }
 
       // Cargar loanEdits — solo los que vienen de Firestore, no reemplazar los defaults
       if(d.loanEdits && Object.keys(d.loanEdits).length > 0){
@@ -1716,7 +1731,7 @@ function addLoan(){
 }
 function delLoan(id){
   if(isReadOnly)return;
-  let i=LOANS.findIndex(l=>l.id===id);if(i>=0){LOANS.splice(i,1);delete loanEdits[id];}
+  let i=LOANS.findIndex(l=>l.id===id);if(i>=0){LOANS.splice(i,1);delete loanEdits[id];deletedLoanIds.add(id);}
   i=extraLoans.findIndex(l=>l.id===id);if(i>=0){extraLoans.splice(i,1);delete loanEdits[id];}
   scheduleFirestoreSave();renderAll();
 }

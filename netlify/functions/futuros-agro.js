@@ -1,6 +1,6 @@
 // netlify/functions/futuros-agro.js
 // Trae futuros agropecuarios (soja y maíz Rosario) desde IOL invertironline
-// Fallback: precios estáticos de referencia de la última captura conocida
+// Credenciales: variables de entorno IOL_USUARIO e IOL_CONTRASENA en Netlify
 
 export async function handler(event, context) {
   const headers = {
@@ -14,10 +14,7 @@ export async function handler(event, context) {
     return { statusCode: 200, headers, body: "" };
   }
 
-  const IOL_USER = process.env.IOL_USUARIO;
-  const IOL_PASS = process.env.IOL_CONTRASENA;
-
-  // Precios de referencia (captura 27/05/2026) usados como fallback
+  // Precios de referencia usados como fallback (actualizar periódicamente)
   const FALLBACK = {
     soja: {
       "2026-07": 335, "2026-09": 337.7, "2026-11": 343,
@@ -29,7 +26,9 @@ export async function handler(event, context) {
     },
   };
 
-  // Si no hay credenciales IOL, devolver fallback
+  const IOL_USER = process.env.IOL_USUARIO;
+  const IOL_PASS = process.env.IOL_CONTRASENA;
+
   if (!IOL_USER || !IOL_PASS) {
     return {
       statusCode: 200,
@@ -39,13 +38,14 @@ export async function handler(event, context) {
         source: "fallback_static",
         soja: FALLBACK.soja,
         maiz: FALLBACK.maiz,
+        nota: "Sin credenciales IOL — usando precios de referencia. Configurá IOL_USUARIO e IOL_CONTRASENA en Netlify.",
         timestamp: new Date().toISOString(),
       }),
     };
   }
 
   try {
-    // Obtener token IOL
+    // PASO 1 — Obtener token IOL
     const tokenRes = await fetch("https://api.invertironline.com/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -54,24 +54,36 @@ export async function handler(event, context) {
         password: IOL_PASS,
         grant_type: "password",
       }),
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(12000),
     });
 
-    if (!tokenRes.ok) throw new Error(`Token IOL error: ${tokenRes.status}`);
+    if (!tokenRes.ok) {
+      const errText = await tokenRes.text().catch(() => "");
+      throw new Error(`Token IOL error HTTP ${tokenRes.status}: ${errText.slice(0,200)}`);
+    }
+
     const tokenData = await tokenRes.json();
     const token = tokenData.access_token;
-    if (!token) throw new Error("Sin access_token");
+    if (!token) throw new Error("IOL no devolvió access_token");
 
-    // Tickers de soja y maíz Rosario en IOL (mercado ROFX)
-    // Soja: SOJA + MES + AÑO, Maíz: MAIZ + MES + AÑO
+    // PASO 2 — Tickers de soja y maíz Rosario en IOL (mercado ROFX)
+    // Formato: PRODUCTO + MES_3LETRAS_ESP + AÑO_2DIG
+    // Soja: SOJ + mes + año | Maíz: MAI + mes + año
     const TICKERS_SOJA = {
-      "2026-05": "SOJMAY26", "2026-07": "SOJJUL26", "2026-09": "SOJSEP26",
-      "2026-11": "SOJNOV26", "2027-01": "SOJENE27", "2027-03": "SOJMAR27",
-      "2027-05": "SOJMAY27", "2027-07": "SOJJUL27",
+      "2026-07": "SOJJUL26",
+      "2026-09": "SOJSEP26",
+      "2026-11": "SOJNOV26",
+      "2027-01": "SOJENE27",
+      "2027-03": "SOJMAR27",
+      "2027-05": "SOJMAY27",
+      "2027-07": "SOJJUL27",
     };
     const TICKERS_MAIZ = {
-      "2026-05": "MAIMAY26", "2026-07": "MAIJUL26", "2026-09": "MAISEP26",
-      "2026-11": "MAINOV26", "2027-01": "MAIENE27", "2027-03": "MAIMAR27",
+      "2026-07": "MAIJUL26",
+      "2026-09": "MAISEP26",
+      "2026-11": "MAINOV26",
+      "2027-01": "MAIENE27",
+      "2027-03": "MAIMAR27",
       "2027-05": "MAIMAY27",
     };
 
@@ -80,7 +92,7 @@ export async function handler(event, context) {
         `https://api.invertironline.com/api/v2/ROFX/Titulos/${ticker}/Cotizacion`,
         {
           headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-          signal: AbortSignal.timeout(6000),
+          signal: AbortSignal.timeout(8000),
         }
       );
       if (!res.ok) return null;
@@ -88,7 +100,6 @@ export async function handler(event, context) {
       return d?.ultimoPrecio || d?.precioAjuste || d?.cierreAnterior || null;
     };
 
-    // Consultar todos los tickers en paralelo
     const sojaData = {};
     const maizData = {};
 
@@ -106,15 +117,14 @@ export async function handler(event, context) {
     ]);
 
     sojaResults.forEach((r) => {
-      if (r.status === "fulfilled" && r.value.precio)
+      if (r.status === "fulfilled" && r.value?.precio != null)
         sojaData[r.value.mes] = r.value.precio;
     });
     maizResults.forEach((r) => {
-      if (r.status === "fulfilled" && r.value.precio)
+      if (r.status === "fulfilled" && r.value?.precio != null)
         maizData[r.value.mes] = r.value.precio;
     });
 
-    // Si IOL devolvió datos, usarlos; si no, usar fallback
     const sojaFinal = Object.keys(sojaData).length > 0 ? sojaData : FALLBACK.soja;
     const maizFinal = Object.keys(maizData).length > 0 ? maizData : FALLBACK.maiz;
     const source = Object.keys(sojaData).length > 0 ? "IOL_invertironline" : "fallback_static";
@@ -131,7 +141,6 @@ export async function handler(event, context) {
       }),
     };
   } catch (error) {
-    // En caso de error, devolver fallback estático
     return {
       statusCode: 200,
       headers,
