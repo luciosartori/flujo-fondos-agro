@@ -1300,7 +1300,6 @@ function renderPrecios(){
 }
 function renderCreditos(){
   const all=[...LOANS,...extraLoans];
-  // Ordenar por fecha exacta de vencimiento; sin fecha van al final por mes
   const sorted=[...all].sort((a,b)=>{
     const fa=cuotaFechas[a.id]||''; const fb=cuotaFechas[b.id]||'';
     const ea=loanEdits[a.id]||a; const eb=loanEdits[b.id]||b;
@@ -1310,32 +1309,26 @@ function renderCreditos(){
   const rows=sorted.map(l=>{
     const e=loanEdits[l.id]||l;
     const tot=(e.monto_ars||0)+(e.monto_usd||0)*getTcMin();
-    const fechaVal=cuotaFechas[l.id]||'';
-    const tieneFecha=!!fechaVal;
-    return `<tr>
-      <td><input type="text" value="${e.mes}" style="width:84px;" ${isReadOnly?'disabled':''} oninput="editLoan('${l.id}','mes',this.value)"></td>
-      <td>
-        <input type="date" class="cuota-fecha-input" value="${fechaVal}" ${isReadOnly?'disabled':''}
-          onchange="editCuotaFecha('${l.id}',this.value)"
-          title="Fecha exacta de vencimiento"
-          style="border-color:${tieneFecha?'var(--green)':'var(--amber)'}">
-        ${tieneFecha?'':'<span style="font-size:9px;color:var(--amber);font-family:IBM Plex Mono,monospace;margin-left:3px;">sin fecha</span>'}
-      </td>
-      <td><input type="text" value="${e.banco}" ${isReadOnly?'disabled':''} oninput="editLoan('${l.id}','banco',this.value)"></td>
-      <td><input type="text" value="${e.concepto}" ${isReadOnly?'disabled':''} oninput="editLoan('${l.id}','concepto',this.value)"></td>
-      <td><input type="number" value="${e.monto_ars||''}" placeholder="ARS" ${isReadOnly?'disabled':''} oninput="editLoan('${l.id}','monto_ars',this.value)"></td>
-      <td><input type="number" value="${e.monto_usd||''}" placeholder="USD" ${isReadOnly?'disabled':''} oninput="editLoan('${l.id}','monto_usd',this.value)"></td>
-      <td style="font-family:'IBM Plex Mono',monospace;white-space:nowrap;">$ ${fmt(tot)}</td>
-      <td>${isReadOnly?'':'<button class="del-btn" onclick="delLoan(''+l.id+'')">✕</button>'}</td>
-    </tr>`;
+    const fv=cuotaFechas[l.id]||'';
+    const bc=fv?'var(--green)':'var(--amber)';
+    const sf=fv?'':'<span style="font-size:9px;color:var(--amber);font-family:IBM Plex Mono,monospace;margin-left:3px;">sin fecha</span>';
+    const db=isReadOnly?'':'<button class="del-btn" onclick="delLoan(\''+l.id+'\')">&#x2715;</button>';
+    const d=isReadOnly?'disabled':'';
+    return '<tr>'
+      +'<td><input type="text" value="'+e.mes+'" style="width:84px;" '+d+' oninput="editLoan(\''+l.id+'\',\'mes\',this.value)"></td>'
+      +'<td><input type="date" class="cuota-fecha-input" value="'+fv+'" '+d+' onchange="editCuotaFecha(\''+l.id+'\',this.value)" style="border-color:'+bc+'">'+sf+'</td>'
+      +'<td><input type="text" value="'+e.banco+'" '+d+' oninput="editLoan(\''+l.id+'\',\'banco\',this.value)"></td>'
+      +'<td><input type="text" value="'+e.concepto+'" '+d+' oninput="editLoan(\''+l.id+'\',\'concepto\',this.value)"></td>'
+      +'<td><input type="number" value="'+(e.monto_ars||'')+'" placeholder="ARS" '+d+' oninput="editLoan(\''+l.id+'\',\'monto_ars\',this.value)"></td>'
+      +'<td><input type="number" value="'+(e.monto_usd||'')+'" placeholder="USD" '+d+' oninput="editLoan(\''+l.id+'\',\'monto_usd\',this.value)"></td>'
+      +'<td style="font-family:\'IBM Plex Mono\',monospace;white-space:nowrap;">$ '+fmt(tot)+'</td>'
+      +'<td>'+db+'</td></tr>';
   }).join('');
-  return `
-  <div class="info-note">La columna <b>FECHA EXACTA VTO.</b> (verde = asignada, naranja = pendiente) hace que la cuota aparezca en el día correcto del Flujo de Caja diario. Se ordenan automáticamente por fecha de vencimiento.</div>
-  <div class="flow-table-wrap"><table class="sub-table">
-    <thead><tr><th>MES</th><th>FECHA EXACTA VTO.</th><th>BANCO/ENTIDAD</th><th>CONCEPTO</th><th>MONTO ARS</th><th>MONTO USD</th><th>TOTAL ARS</th><th></th></tr></thead>
-    <tbody>${rows}</tbody>
-  </table></div>
-  ${isReadOnly?'':'<button class="add-row-btn" onclick="addLoan()">+ Agregar cuota</button>'}`;
+  return '<div class="info-note">La columna <b>FECHA EXACTA VTO.</b> (verde = asignada, naranja = pendiente) hace que la cuota aparezca en el día correcto del Flujo de Caja diario. Se ordenan automáticamente por fecha de vencimiento.</div>'
+    +'<div class="flow-table-wrap"><table class="sub-table">'
+    +'<thead><tr><th>MES</th><th>FECHA EXACTA VTO.</th><th>BANCO/ENTIDAD</th><th>CONCEPTO</th><th>MONTO ARS</th><th>MONTO USD</th><th>TOTAL ARS</th><th></th></tr></thead>'
+    +'<tbody>'+rows+'</tbody></table></div>'
+    +(isReadOnly?'':'<button class="add-row-btn" onclick="addLoan()">+ Agregar cuota</button>');
 }
 
 function editCuotaFecha(id,val){
@@ -1538,31 +1531,36 @@ function renderCaja(){
 
   const renderMovGroup=(titulo,lista,colorClass)=>{
     if(!lista.length)return'';
-    return`<div class="caja-mov-group">
-      <div class="caja-mov-group-title">${titulo}</div>
-      ${lista.map(m=>{
-        const pagoKey='pago_'+m.id;
-        const pagado=!!(cajaMovimientos.find(c=>c.id===pagoKey));
-        const pagoStyle=pagado?'opacity:0.5;text-decoration:line-through;':'';
-        return`<div class="caja-mov-row" style="${pagoStyle}">
-          <div class="caja-mov-concepto" style="display:flex;align-items:center;gap:8px;">
-            ${!isReadOnly?`<label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;color:${pagado?'var(--green)':'var(--text3)'};font-family:IBM Plex Mono,monospace;" title="Marcar como pagado">
-              <input type="checkbox" ${pagado?'checked':''} onchange="togglePagoCaja('${m.id}',this.checked)" style="width:14px;height:14px;cursor:pointer;accent-color:var(--green);">
-              ${pagado?'<span style="color:var(--green);">✓ pago</span>':'<span>pagar</span>'}
-            </label>`:''}
-            <span class="mov-tag ${colorClass}">${m.origen==='cuota'?m.banco:m.origen==='venta_real'?'GRANO':'MANUAL'}</span>
-            ${m.concepto}${m.obs?` <span style="color:var(--text3);font-size:10px;">(${m.obs})</span>`:''}
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div>
-              ${m.monto_ars?`<div class="caja-mov-monto ${colorClass==='ingreso'?'pos':'neg'}">${colorClass==='ingreso'?'+ ':'- '}$ ${fmt(Math.abs(m.monto_ars))}</div>`:''}
-              ${m.monto_usd?`<div class="caja-mov-monto ${colorClass==='ingreso'?'pos':'neg'}" style="font-size:10px;">${colorClass==='ingreso'?'+ ':'- '}U$S ${fmt(Math.abs(m.monto_usd),2)}</div>`:''}
-            </div>
-            ${m.origen==='manual'&&!isReadOnly?`<button class="del-btn" onclick="delCajaMov('${m.rawId}')">✕</button>`:''}
-          </div>
-        </div>`;
-      }).join('')}
-    </div>`;
+    const rowsHtml=lista.map(m=>{
+      const pagoKey='pago_'+m.id;
+      const pagado=!!(cajaMovimientos.find(c=>c.id===pagoKey));
+      const pagoStyle=pagado?'opacity:0.5;text-decoration:line-through;':'';
+      const labelColor=pagado?'var(--green)':'var(--text3)';
+      const checkHtml=isReadOnly?'':
+        '<label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;color:'+labelColor+';font-family:IBM Plex Mono,monospace;" title="Marcar como pagado">'
+        +'<input type="checkbox" '+(pagado?'checked':'')
+        +' onchange="togglePagoCaja(\''+m.id+'\',this.checked)" style="width:14px;height:14px;cursor:pointer;accent-color:var(--green);">'
+        +(pagado?'<span style="color:var(--green);">&#x2713; pago</span>':'<span>pagar</span>')
+        +'</label>';
+      const tag=m.origen==='cuota'?m.banco:m.origen==='venta_real'?'GRANO':'MANUAL';
+      const obsHtml=m.obs?'<span style="color:var(--text3);font-size:10px;">('+m.obs+')</span>':'';
+      const signo=colorClass==='ingreso'?'+ ':'- ';
+      const pn=colorClass==='ingreso'?'pos':'neg';
+      const arsHtml=m.monto_ars?'<div class="caja-mov-monto '+pn+'">'+signo+'$ '+fmt(Math.abs(m.monto_ars))+'</div>':'';
+      const usdHtml=m.monto_usd?'<div class="caja-mov-monto '+pn+'" style="font-size:10px;">'+signo+'U$S '+fmt(Math.abs(m.monto_usd),2)+'</div>':'';
+      const delHtml=m.origen==='manual'&&!isReadOnly?'<button class="del-btn" onclick="delCajaMov(\''+m.rawId+'\')">&#x2715;</button>':'';
+      return '<div class="caja-mov-row" style="'+pagoStyle+'">'
+        +'<div class="caja-mov-concepto" style="display:flex;align-items:center;gap:8px;">'
+        +checkHtml
+        +'<span class="mov-tag '+colorClass+'">'+tag+'</span>'
+        +m.concepto+' '+obsHtml
+        +'</div>'
+        +'<div style="display:flex;align-items:center;gap:8px;">'
+        +'<div>'+arsHtml+usdHtml+'</div>'
+        +delHtml
+        +'</div></div>';
+    }).join('');
+    return '<div class="caja-mov-group"><div class="caja-mov-group-title">'+titulo+'</div>'+rowsHtml+'</div>';
   };
 
   const diasHtml=cf.map((dia,idx)=>{
