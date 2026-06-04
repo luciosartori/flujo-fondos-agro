@@ -514,15 +514,13 @@ let LOANS=[...LOANS_DEFAULT.map(l=>({...l}))];
 let loanEdits={};
 LOANS.forEach(l=>{loanEdits[l.id]={...l};});
 let extraLoans=[];
-// IDs de préstamos default eliminados por el usuario — persiste en Firestore
-let deletedLoanIds=new Set();
 
 let egresoModules={
-  operativos:{label:'Gastos operativos',items:MONTHS.map(({key})=>({key,subItems:[{id:'op1',concepto:'Combustible',monto:0},{id:'op2',concepto:'Mano de obra',monto:0}]}))},
-  produccion:{label:'Costos de producción',items:MONTHS.map(({key})=>({key,subItems:[{id:'pr1',concepto:'Semillas',monto:0},{id:'pr2',concepto:'Agroquímicos',monto:0},{id:'pr3',concepto:'Fertilizantes',monto:0}]}))},
-  comercializacion:{label:'Gastos de comercialización',items:MONTHS.map(({key})=>({key,subItems:[{id:'co1',concepto:'Flete',monto:0},{id:'co2',concepto:'Comisiones',monto:0},{id:'co3',concepto:'Sellados',monto:0}]}))},
-  arrendamientos:{label:'Arrendamientos',items:MONTHS.map(({key})=>({key,subItems:[{id:'ar1',concepto:'Alquiler campo',monto:0}]}))},
-  estructura:{label:'Gastos de estructura',items:MONTHS.map(({key})=>({key,subItems:[{id:'es1',concepto:'Administración',monto:0},{id:'es2',concepto:'Contaduría',monto:0}]}))},
+  operativos:{label:'Gastos operativos',items:MONTHS.map(({key})=>({key,subItems:[{id:'op1',concepto:'Combustible',monto:0,moneda:'ars'},{id:'op2',concepto:'Mano de obra',monto:0,moneda:'ars'}]}))},
+  produccion:{label:'Costos de producción',items:MONTHS.map(({key})=>({key,subItems:[{id:'pr1',concepto:'Semillas',monto:0,moneda:'ars'},{id:'pr2',concepto:'Agroquímicos',monto:0,moneda:'ars'},{id:'pr3',concepto:'Fertilizantes',monto:0,moneda:'ars'}]}))},
+  comercializacion:{label:'Gastos de comercialización',items:MONTHS.map(({key})=>({key,subItems:[{id:'co1',concepto:'Flete',monto:0,moneda:'ars'},{id:'co2',concepto:'Comisiones',monto:0,moneda:'ars'},{id:'co3',concepto:'Sellados',monto:0,moneda:'ars'}]}))},
+  arrendamientos:{label:'Arrendamientos',tipoEspecial:'tn',items:MONTHS.map(({key})=>({key,subItems:[{id:'ar1',concepto:'Alquiler campo',tn_soja:0,tn_maiz:0,fecha_vto:''}]}))},
+  estructura:{label:'Gastos de estructura',items:MONTHS.map(({key})=>({key,subItems:[{id:'es1',concepto:'Administración',monto:0,moneda:'ars'},{id:'es2',concepto:'Contaduría',monto:0,moneda:'ars'}]}))},
 };
 
 let ventaOverrides={};
@@ -592,7 +590,6 @@ async function saveToFirestore(){
     const payload={
       loanEdits,
       extraLoans,
-      deletedLoanIds: [...deletedLoanIds],
       ventaOverrides,
       grainOverride,
       tcOverride,
@@ -609,8 +606,7 @@ async function saveToFirestore(){
       updatedAt: new Date().toISOString(),
       updatedBy: window._currentUser.email
     };
-    // merge:false para que los arrays eliminados no queden huérfanos en Firestore
-    await setDoc(doc(db,'flujo','datos'), payload);
+    await setDoc(doc(db,'flujo','datos'), payload, {merge: true});
     setSaveStatus('saved');
     setTimeout(()=>setSaveStatus('idle'),3000);
   }catch(e){
@@ -633,17 +629,6 @@ window._loadFirestoreData = async function(){
         return;
       }
       const d=snap.data();
-
-      // Restaurar préstamos eliminados por el usuario
-      if(d.deletedLoanIds && Array.isArray(d.deletedLoanIds)){
-        deletedLoanIds = new Set(d.deletedLoanIds);
-        // Eliminar del array LOANS los que el usuario borró
-        d.deletedLoanIds.forEach(id=>{
-          const i=LOANS.findIndex(l=>l.id===id);
-          if(i>=0) LOANS.splice(i,1);
-          delete loanEdits[id];
-        });
-      }
 
       // Cargar loanEdits — solo los que vienen de Firestore, no reemplazar los defaults
       if(d.loanEdits && Object.keys(d.loanEdits).length > 0){
@@ -679,7 +664,15 @@ window._loadFirestoreData = async function(){
           if(!egresoModules[modKey])return;
           Object.entries(monthMap).forEach(([key,subItems])=>{
             const item=egresoModules[modKey].items.find(i=>i.key===key);
-            if(item&&Array.isArray(subItems)) item.subItems=subItems;
+            if(item&&Array.isArray(subItems)){
+              item.subItems=subItems.map(s=>({
+                ...s,
+                moneda:s.moneda||'ars',
+                fecha_vto:s.fecha_vto||'',
+                tn_soja:s.tn_soja||0,
+                tn_maiz:s.tn_maiz||0,
+              }));
+            }
           });
         });
       }
@@ -827,7 +820,20 @@ function getLoanTotal(key){
 }
 function getEgresoMod(key,modKey){
   const mdata=egresoModules[modKey].items.find(i=>i.key===key);
-  let t=0;if(mdata)mdata.subItems.forEach(s=>t+=(+s.monto||0));return t;
+  let t=0;
+  if(!mdata)return 0;
+  if(modKey==='arrendamientos'){
+    mdata.subItems.forEach(s=>{
+      t+=(+s.tn_soja||0)*getGrainPrice('soja',key).v*getTcMay();
+      t+=(+s.tn_maiz||0)*getGrainPrice('maiz',key).v*getTcMay();
+    });
+  } else {
+    mdata.subItems.forEach(s=>{
+      if(s.moneda==='usd') t+=(+s.monto||0)*getTcMin();
+      else t+=(+s.monto||0);
+    });
+  }
+  return t;
 }
 function getEgresoTotal(key){return Object.keys(egresoModules).reduce((a,k)=>a+getEgresoMod(key,k),0);}
 
@@ -1294,30 +1300,37 @@ function renderPrecios(){
 }
 function renderCreditos(){
   const all=[...LOANS,...extraLoans];
-  const rows=all.map(l=>{
+  // Ordenar por fecha exacta de vencimiento; sin fecha van al final por mes
+  const sorted=[...all].sort((a,b)=>{
+    const fa=cuotaFechas[a.id]||''; const fb=cuotaFechas[b.id]||'';
+    const ea=loanEdits[a.id]||a; const eb=loanEdits[b.id]||b;
+    const ka=fa||(ea.mes||'9999-99'); const kb=fb||(eb.mes||'9999-99');
+    return ka<kb?-1:ka>kb?1:0;
+  });
+  const rows=sorted.map(l=>{
     const e=loanEdits[l.id]||l;
     const tot=(e.monto_ars||0)+(e.monto_usd||0)*getTcMin();
     const fechaVal=cuotaFechas[l.id]||'';
     const tieneFecha=!!fechaVal;
     return `<tr>
-      <td><input type="text" value="${e.mes}" style="width:84px;" ${isReadOnly?'disabled':''} onchange="editLoan('${l.id}','mes',this.value)"></td>
+      <td><input type="text" value="${e.mes}" style="width:84px;" ${isReadOnly?'disabled':''} oninput="editLoan('${l.id}','mes',this.value)"></td>
       <td>
         <input type="date" class="cuota-fecha-input" value="${fechaVal}" ${isReadOnly?'disabled':''}
           onchange="editCuotaFecha('${l.id}',this.value)"
-          title="Fecha exacta de vencimiento — aparece en el Flujo de Caja diario"
+          title="Fecha exacta de vencimiento"
           style="border-color:${tieneFecha?'var(--green)':'var(--amber)'}">
         ${tieneFecha?'':'<span style="font-size:9px;color:var(--amber);font-family:IBM Plex Mono,monospace;margin-left:3px;">sin fecha</span>'}
       </td>
-      <td><input type="text" value="${e.banco}" ${isReadOnly?'disabled':''} onchange="editLoan('${l.id}','banco',this.value)"></td>
-      <td><input type="text" value="${e.concepto}" ${isReadOnly?'disabled':''} onchange="editLoan('${l.id}','concepto',this.value)"></td>
-      <td><input type="number" value="${e.monto_ars||''}" placeholder="ARS" ${isReadOnly?'disabled':''} onchange="editLoan('${l.id}','monto_ars',this.value)"></td>
-      <td><input type="number" value="${e.monto_usd||''}" placeholder="USD" ${isReadOnly?'disabled':''} onchange="editLoan('${l.id}','monto_usd',this.value)"></td>
+      <td><input type="text" value="${e.banco}" ${isReadOnly?'disabled':''} oninput="editLoan('${l.id}','banco',this.value)"></td>
+      <td><input type="text" value="${e.concepto}" ${isReadOnly?'disabled':''} oninput="editLoan('${l.id}','concepto',this.value)"></td>
+      <td><input type="number" value="${e.monto_ars||''}" placeholder="ARS" ${isReadOnly?'disabled':''} oninput="editLoan('${l.id}','monto_ars',this.value)"></td>
+      <td><input type="number" value="${e.monto_usd||''}" placeholder="USD" ${isReadOnly?'disabled':''} oninput="editLoan('${l.id}','monto_usd',this.value)"></td>
       <td style="font-family:'IBM Plex Mono',monospace;white-space:nowrap;">$ ${fmt(tot)}</td>
-      <td>${isReadOnly?'':'<button class="del-btn" onclick="delLoan(\''+l.id+'\')">✕</button>'}</td>
+      <td>${isReadOnly?'':'<button class="del-btn" onclick="delLoan(''+l.id+'')">✕</button>'}</td>
     </tr>`;
   }).join('');
   return `
-  <div class="info-note">La columna <b>FECHA EXACTA VTO.</b> (verde = asignada, naranja = pendiente) hace que la cuota aparezca en el día correcto del Flujo de Caja diario.</div>
+  <div class="info-note">La columna <b>FECHA EXACTA VTO.</b> (verde = asignada, naranja = pendiente) hace que la cuota aparezca en el día correcto del Flujo de Caja diario. Se ordenan automáticamente por fecha de vencimiento.</div>
   <div class="flow-table-wrap"><table class="sub-table">
     <thead><tr><th>MES</th><th>FECHA EXACTA VTO.</th><th>BANCO/ENTIDAD</th><th>CONCEPTO</th><th>MONTO ARS</th><th>MONTO USD</th><th>TOTAL ARS</th><th></th></tr></thead>
     <tbody>${rows}</tbody>
@@ -1337,25 +1350,57 @@ function renderEgresosMod(){
     const grand=MONTHS.reduce((a,{key})=>a+getEgresoMod(key,modKey),0);
     const curMk=MONTHS[currentMonthIdx];
     const mdata=mod.items.find(i=>i.key===curMk.key);
-    const subRows=mdata?mdata.subItems.map((s,si)=>`<tr>
-      <td><input type="text" value="${s.concepto}" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'concepto',this.value)"></td>
-      <td><input type="number" value="${s.monto||0}" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'monto',this.value)"></td>
-      <td>${isReadOnly?'':'<button class="del-btn" onclick="delEgreso(\''+modKey+'\',\''+curMk.key+'\','+si+')">✕</button>'}</td>
-    </tr>`).join(''):'';
+    const esArrendamiento=modKey==='arrendamientos';
+    const bodyId=`eg-${modKey}`;
+
+    let subRows='';
+    if(mdata){
+      if(esArrendamiento){
+        subRows=mdata.subItems.map((s,si)=>`<tr>
+          <td><input type="text" value="${s.concepto||''}" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'concepto',this.value)"></td>
+          <td><input type="number" step="0.01" min="0" value="${s.tn_soja||''}" placeholder="tn soja" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'tn_soja',this.value)" style="width:90px;"></td>
+          <td style="font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">≈ $ ${fmt((+s.tn_soja||0)*getGrainPrice('soja',curMk.key).v*getTcMay())}</td>
+          <td><input type="number" step="0.01" min="0" value="${s.tn_maiz||''}" placeholder="tn maíz" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'tn_maiz',this.value)" style="width:90px;"></td>
+          <td style="font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">≈ $ ${fmt((+s.tn_maiz||0)*getGrainPrice('maiz',curMk.key).v*getTcMay())}</td>
+          <td><input type="date" value="${s.fecha_vto||''}" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'fecha_vto',this.value)" class="cuota-fecha-input"></td>
+          <td><b style="font-family:'IBM Plex Mono',monospace;">$ ${fmt(((+s.tn_soja||0)*getGrainPrice('soja',curMk.key).v+(+s.tn_maiz||0)*getGrainPrice('maiz',curMk.key).v)*getTcMay())}</b></td>
+          <td>${isReadOnly?'':'<button class="del-btn" onclick="delEgreso(\''+modKey+'\',\''+curMk.key+'\','+si+')">✕</button>'}</td>
+        </tr>`).join('');
+      } else {
+        subRows=mdata.subItems.map((s,si)=>`<tr>
+          <td><input type="text" value="${s.concepto||''}" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'concepto',this.value)"></td>
+          <td>
+            <select style="font-size:11px;font-family:'IBM Plex Mono',monospace;padding:3px 6px;border:0.5px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'moneda',this.value)">
+              <option value="ars" ${(s.moneda||'ars')==='ars'?'selected':''}>ARS $</option>
+              <option value="usd" ${s.moneda==='usd'?'selected':''}>USD U$S</option>
+            </select>
+          </td>
+          <td><input type="number" step="0.01" value="${s.monto||0}" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'monto',this.value)"></td>
+          <td style="font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">${s.moneda==='usd'?'≈ $ '+fmt((+s.monto||0)*getTcMin()):''}</td>
+          <td><input type="date" value="${s.fecha_vto||''}" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'fecha_vto',this.value)" class="cuota-fecha-input" title="Fecha exacta de vencimiento"></td>
+          <td>${isReadOnly?'':'<button class="del-btn" onclick="delEgreso(\''+modKey+'\',\''+curMk.key+'\','+si+')">✕</button>'}</td>
+        </tr>`).join('');
+      }
+    }
+
+    const thead = esArrendamiento
+      ? '<tr><th>CONCEPTO</th><th>TN SOJA</th><th>≈ ARS</th><th>TN MAÍZ</th><th>≈ ARS</th><th>FECHA VTO.</th><th>TOTAL ARS</th><th></th></tr>'
+      : '<tr><th>CONCEPTO</th><th>MONEDA</th><th>MONTO</th><th>≈ ARS</th><th>FECHA VTO.</th><th></th></tr>';
+
     return `<div class="section" style="margin-bottom:10px;">
-      <div class="section-header" onclick="toggleSection('eg-${modKey}')">
+      <div class="section-header" onclick="toggleSection('${bodyId}')">
         <h3>${mod.label.toUpperCase()}</h3>
         <div class="stotals"><span>Total período: <b>$ ${fmt(grand)}</b></span></div>
       </div>
-      <div class="section-body" id="eg-${modKey}">
+      <div class="section-body" id="${bodyId}">
         <div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;">
           <span class="info-note" style="margin:0;">Mes:</span>
           <select onchange="setMonthEg(this.value)" style="font-size:12px;font-family:'IBM Plex Mono',monospace;padding:4px 7px;border:0.5px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);">
             ${MONTHS.map((mk,i)=>`<option value="${i}" ${i===currentMonthIdx?'selected':''}>${MN[mk.m].substring(0,3).toUpperCase()} ${mk.y}</option>`).join('')}
           </select>
         </div>
-        <table class="sub-table"><tr><th>SUBCONCEPTO</th><th>MONTO ARS</th><th></th></tr>${subRows}</table>
-        ${isReadOnly?'':'<button class="add-row-btn" onclick="addEgreso(\''+modKey+'\',\''+curMk.key+'\')">+ Agregar subconcepto</button>'}
+        <table class="sub-table"><thead>${thead}</thead><tbody id="eg-body-${modKey}">${subRows}</tbody></table>
+        ${isReadOnly?'':'<button class="add-row-btn" onclick="addEgreso(\''+modKey+'\',\''+curMk.key+'\',\''+bodyId+'\')">+ Agregar subconcepto</button>'}
         <div class="year-mini">${[2026,2027,2028,2029,2030].map(y=>{const t=MONTHS.filter(mk=>mk.y===y).reduce((a,mk)=>a+getEgresoMod(mk.key,modKey),0);return `<div class="metric"><div class="ml">${y}</div><div class="mv" style="font-size:13px;">$ ${fmt(t)}</div></div>`;}).join('')}</div>
       </div>
     </div>`;
@@ -1495,19 +1540,28 @@ function renderCaja(){
     if(!lista.length)return'';
     return`<div class="caja-mov-group">
       <div class="caja-mov-group-title">${titulo}</div>
-      ${lista.map(m=>`<div class="caja-mov-row">
-        <div class="caja-mov-concepto">
-          <span class="mov-tag ${colorClass}">${m.origen==='cuota'?m.banco:m.origen==='venta_real'?'GRANO':'MANUAL'}</span>
-          ${m.concepto}${m.obs?` <span style="color:var(--text3);font-size:10px;">(${m.obs})</span>`:''}
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <div>
-            ${m.monto_ars?`<div class="caja-mov-monto ${colorClass==='ingreso'?'pos':'neg'}">${colorClass==='ingreso'?'+ ':'- '}$ ${fmt(Math.abs(m.monto_ars))}</div>`:''}
-            ${m.monto_usd?`<div class="caja-mov-monto ${colorClass==='ingreso'?'pos':'neg'}" style="font-size:10px;">${colorClass==='ingreso'?'+ ':'- '}U$S ${fmt(Math.abs(m.monto_usd),2)}</div>`:''}
+      ${lista.map(m=>{
+        const pagoKey='pago_'+m.id;
+        const pagado=!!(cajaMovimientos.find(c=>c.id===pagoKey));
+        const pagoStyle=pagado?'opacity:0.5;text-decoration:line-through;':'';
+        return`<div class="caja-mov-row" style="${pagoStyle}">
+          <div class="caja-mov-concepto" style="display:flex;align-items:center;gap:8px;">
+            ${!isReadOnly?`<label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;color:${pagado?'var(--green)':'var(--text3)'};font-family:IBM Plex Mono,monospace;" title="Marcar como pagado">
+              <input type="checkbox" ${pagado?'checked':''} onchange="togglePagoCaja('${m.id}',this.checked)" style="width:14px;height:14px;cursor:pointer;accent-color:var(--green);">
+              ${pagado?'<span style="color:var(--green);">✓ pago</span>':'<span>pagar</span>'}
+            </label>`:''}
+            <span class="mov-tag ${colorClass}">${m.origen==='cuota'?m.banco:m.origen==='venta_real'?'GRANO':'MANUAL'}</span>
+            ${m.concepto}${m.obs?` <span style="color:var(--text3);font-size:10px;">(${m.obs})</span>`:''}
           </div>
-          ${m.origen==='manual'&&!isReadOnly?`<button class="del-btn" onclick="delCajaMov('${m.rawId}')">✕</button>`:''}
-        </div>
-      </div>`).join('')}
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div>
+              ${m.monto_ars?`<div class="caja-mov-monto ${colorClass==='ingreso'?'pos':'neg'}">${colorClass==='ingreso'?'+ ':'- '}$ ${fmt(Math.abs(m.monto_ars))}</div>`:''}
+              ${m.monto_usd?`<div class="caja-mov-monto ${colorClass==='ingreso'?'pos':'neg'}" style="font-size:10px;">${colorClass==='ingreso'?'+ ':'- '}U$S ${fmt(Math.abs(m.monto_usd),2)}</div>`:''}
+            </div>
+            ${m.origen==='manual'&&!isReadOnly?`<button class="del-btn" onclick="delCajaMov('${m.rawId}')">✕</button>`:''}
+          </div>
+        </div>`;
+      }).join('')}
     </div>`;
   };
 
@@ -1607,6 +1661,31 @@ function delCajaMov(id){
   if(!confirm('¿Eliminar este movimiento?'))return;
   cajaMovimientos=cajaMovimientos.filter(m=>m.id!==id);
   scheduleFirestoreSave();renderTabContent();
+}
+function togglePagoCaja(movId,checked){
+  if(isReadOnly)return;
+  const pagoKey='pago_'+movId;
+  if(checked){
+    // Registrar el pago si no existe
+    if(!cajaMovimientos.find(c=>c.id===pagoKey)){
+      cajaMovimientos.push({
+        id:pagoKey,
+        tipo:'pago_confirmado',
+        concepto:'Pago confirmado',
+        movRef:movId,
+        fecha:new Date().toISOString().split('T')[0],
+        cargadoEn:new Date().toISOString(),
+        cargadoPor:window._currentUser?window._currentUser.email:''
+      });
+    }
+  } else {
+    cajaMovimientos=cajaMovimientos.filter(c=>c.id!==pagoKey);
+  }
+  scheduleFirestoreSave();
+  // Re-render sin perder el estado de apertura del día
+  const openIds=Array.from(document.querySelectorAll('.caja-day-body.open')).map(el=>el.id);
+  renderTabContent();
+  openIds.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('open');});
 }
 
 // ============================================================
@@ -1731,25 +1810,49 @@ function addLoan(){
 }
 function delLoan(id){
   if(isReadOnly)return;
-  let i=LOANS.findIndex(l=>l.id===id);if(i>=0){LOANS.splice(i,1);delete loanEdits[id];deletedLoanIds.add(id);}
+  let i=LOANS.findIndex(l=>l.id===id);if(i>=0){LOANS.splice(i,1);delete loanEdits[id];}
   i=extraLoans.findIndex(l=>l.id===id);if(i>=0){extraLoans.splice(i,1);delete loanEdits[id];}
   scheduleFirestoreSave();renderAll();
 }
 function editEgreso(modKey,key,si,field,val){
   if(isReadOnly)return;
   const mdata=egresoModules[modKey].items.find(i=>i.key===key);
-  if(mdata&&mdata.subItems[si])mdata.subItems[si][field]=field==='monto'?(+val||0):val;
-  scheduleFirestoreSave();renderAll();
+  if(!mdata||!mdata.subItems[si])return;
+  const numFields=['monto','tn_soja','tn_maiz'];
+  mdata.subItems[si][field]=numFields.includes(field)?(+val||0):val;
+  scheduleFirestoreSave();
+  // Solo re-render la fila afectada para no perder el foco
+  const openIds=Array.from(document.querySelectorAll('.section-body.open')).map(el=>el.id);
+  renderTabContent();
+  openIds.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('open');});
 }
-function addEgreso(modKey,key){
+function addEgreso(modKey,key,bodyId){
   if(isReadOnly)return;
   const mdata=egresoModules[modKey].items.find(i=>i.key===key);
-  if(mdata){mdata.subItems.push({id:'n'+Date.now(),concepto:'Nuevo ítem',monto:0});scheduleFirestoreSave();renderTabContent();}
+  if(!mdata)return;
+  const esArr=modKey==='arrendamientos';
+  mdata.subItems.push(esArr
+    ?{id:'n'+Date.now(),concepto:'Nuevo arrendamiento',tn_soja:0,tn_maiz:0,fecha_vto:''}
+    :{id:'n'+Date.now(),concepto:'Nuevo ítem',monto:0,moneda:'ars',fecha_vto:''});
+  scheduleFirestoreSave();
+  // Re-render sin colapsar secciones abiertas
+  const openIds=Array.from(document.querySelectorAll('.section-body.open')).map(el=>el.id);
+  renderTabContent();
+  openIds.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('open');});
+  // Foco en el último campo de concepto del módulo
+  setTimeout(()=>{
+    const tbody=document.getElementById('eg-body-'+modKey);
+    if(tbody){const inputs=tbody.querySelectorAll('input[type=text]');if(inputs.length)inputs[inputs.length-1].focus();}
+  },50);
 }
 function delEgreso(modKey,key,si){
   if(isReadOnly)return;
   const mdata=egresoModules[modKey].items.find(i=>i.key===key);
-  if(mdata)mdata.subItems.splice(si,1);scheduleFirestoreSave();renderAll();
+  if(mdata)mdata.subItems.splice(si,1);
+  scheduleFirestoreSave();
+  const openIds=Array.from(document.querySelectorAll('.section-body.open')).map(el=>el.id);
+  renderTabContent();
+  openIds.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('open');});
 }
 function exportCSV(){
   const flow=calcFlow();
