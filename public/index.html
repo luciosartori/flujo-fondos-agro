@@ -429,7 +429,7 @@ body{font-family:'IBM Plex Sans',sans-serif;font-size:13px;background:var(--bg);
 // ============================================================
 // CONFIG
 // ============================================================
-const NETLIFY_BASE = "https://flujofondosagro.netlify.app/"; // <-- ya lo tenés configurado
+const NETLIFY_BASE = "https://flujofondosagro.netlify.app"; // <-- ya lo tenés configurado
 const FN_AGRO = `${NETLIFY_BASE}/.netlify/functions/futuros-agro`;
 const FN_FIN  = `${NETLIFY_BASE}/.netlify/functions/futuros-financieros`;
 const FN_IOL  = `${NETLIFY_BASE}/.netlify/functions/futuros-iol`;
@@ -458,7 +458,7 @@ let currentMonthIdx=0,currentTab='mensual';
 let isReadOnly=false;
 let saveTimer=null;
 
-const FALLBACK_SOJA={'2026-06':0,'2026-07':335,'2026-09':337.7,'2026-11':343,'2027-01':0,'2027-05':336,'2027-07':345};
+const FALLBACK_SOJA={'2026-06':330,'2026-07':335,'2026-09':337.7,'2026-11':343,'2027-01':338,'2027-05':336,'2027-07':345};
 const FALLBACK_MAIZ={'2026-07':168,'2026-09':170,'2026-11':172,'2027-01':174,'2027-03':176,'2027-05':178};
 
 // ============================================================
@@ -752,28 +752,13 @@ async function fetchGranosLive(){
 async function fetchFinancieros(){
   if(NETLIFY_BASE.includes('TU-SITIO')) return;
   try {
-    // Intentar primero con IOL (más confiable, datos oficiales)
-    const resIol = await fetch(FN_IOL, {signal: AbortSignal.timeout(12000)});
-    if(resIol.ok){
-      const dataIol = await resIol.json();
-      if(dataIol.ok && dataIol.dolar_futuro && Object.keys(dataIol.dolar_futuro).length > 0){
-        dolarFuturo = dataIol.dolar_futuro;
-        dataStatus.fin = 'live';
-        dataStatus.finFuente = 'IOL';
-        return;
-      }
-    }
-  } catch(e){ /* fallback al scraping */ }
-
-  // Fallback: scraping MatbaRofex
-  try {
-    const res = await fetch(FN_FIN, {signal: AbortSignal.timeout(10000)});
+    const res = await fetch(FN_FIN, {signal: AbortSignal.timeout(12000)});
     if(!res.ok) throw new Error('HTTP '+res.status);
     const data = await res.json();
-    if(data.ok && data.dolar_futuro) {
+    if(data.ok && data.dolar_futuro && Object.keys(data.dolar_futuro).length > 0){
       dolarFuturo = data.dolar_futuro;
       dataStatus.fin = 'live';
-      dataStatus.finFuente = 'A3';
+      dataStatus.finFuente = data.source||'Primary';
     } else {
       dataStatus.fin = 'error';
     }
@@ -1284,7 +1269,10 @@ function renderPrecios(){
   const mesesCotizados=MONTHS.slice(0,24);
   const sojaItems=mesesCotizados.map(({key,y,m})=>{const p=getGrainPrice('soja',key);const isLive=p.src==='live'||p.src==='live-interp';return `<div class="precio-item ${isLive?'live-price':''}"><div class="pi-mes">${MN[m].substring(0,3).toUpperCase()} ${y}</div><div class="pi-val">U$S ${fmt(p.v,1)}</div><div class="pi-src">${p.src.toUpperCase()}</div></div>`;}).join('');
   const maizItems=mesesCotizados.map(({key,y,m})=>{const p=getGrainPrice('maiz',key);const isLive=p.src==='live'||p.src==='live-interp';return `<div class="precio-item ${isLive?'live-price':''}"><div class="pi-mes">${MN[m].substring(0,3).toUpperCase()} ${y}</div><div class="pi-val">U$S ${fmt(p.v,1)}</div><div class="pi-src">${p.src.toUpperCase()}</div></div>`;}).join('');
-  const dolarItems=Object.entries(dolarFuturo).sort().slice(0,24).map(([key,v])=>{const[y,m]=key.split('-');return `<div class="precio-item live-price"><div class="pi-mes">${MN[+m-1].substring(0,3).toUpperCase()} ${y}</div><div class="pi-val">$ ${fmt(v,0)}</div><div class="pi-src">DÓLAR FUTURO</div></div>`;}).join('')||'<div style="color:var(--text3);font-size:12px;font-family:\'IBM Plex Mono\',monospace;">Sin datos. Configurá Netlify para activar.</div>';
+  // Para JUN26: si no vino de Primary (contrato vencido), usar TC mayorista como spot
+  const dolarConJun={...dolarFuturo};
+  if(!dolarConJun['2026-06'] && getTcMay()>1){dolarConJun['2026-06']=getTcMay();}
+  const dolarItems=Object.entries(dolarConJun).sort().slice(0,24).map(([key,v])=>{const[y,m]=key.split('-');const esSpot=key==='2026-06'&&!dolarFuturo['2026-06'];return `<div class="precio-item live-price"><div class="pi-mes">${MN[+m-1].substring(0,3).toUpperCase()} ${y}</div><div class="pi-val">$ ${fmt(v,0)}</div><div class="pi-src">${esSpot?'TC SPOT':'DÓLAR FUTURO'}</div></div>`;}).join('')||'<div style="color:var(--text3);font-size:12px;font-family:\'IBM Plex Mono\',monospace;">Sin datos. Configurá Netlify para activar.</div>';
   return `
   <div class="precios-panel"><h4><span class="status-dot ${dataStatus.tc==='live'?'live':'error'}"></span>TIPOS DE CAMBIO BNA (dolarapi.com)</h4>
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -1385,7 +1373,7 @@ function renderEgresosMod(){
         <h3>${mod.label.toUpperCase()}</h3>
         <div class="stotals"><span>Total período: <b>$ ${fmt(grand)}</b></span></div>
       </div>
-      <div class="section-body" id="${bodyId}">
+      <div class="section-body open" id="${bodyId}">
         <div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;">
           <span class="info-note" style="margin:0;">Mes:</span>
           <select onchange="setMonthEg(this.value)" style="font-size:12px;font-family:'IBM Plex Mono',monospace;padding:4px 7px;border:0.5px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);">
@@ -1450,17 +1438,29 @@ function getCajaMovsDia(fechaKey){
         movs.push({id:'cuota_'+l.id,tipo:'egreso_fijo',concepto:e.concepto,banco:e.banco,monto_ars,monto_usd,origen:'cuota'});
     }
   });
-  // 2. Egresos de módulos — solo en día 1 del mes
-  const diaNum=parseInt(fechaKey.split('-')[2]);
-  if(diaNum===1){
-    Object.entries(egresoModules).forEach(([modKey,mod])=>{
-      const mdata=mod.items.find(i=>i.key===mesKey);if(!mdata)return;
+  // 2. Egresos de módulos — en su fecha exacta de vencimiento si tiene, o el día 1 del mes
+  Object.entries(egresoModules).forEach(([modKey,mod])=>{
+    // Buscar subItems de todos los meses que vencen en esta fecha exacta
+    mod.items.forEach(mdata=>{
       mdata.subItems.forEach(s=>{
-        if(+s.monto>0)
-          movs.push({id:'egr_'+modKey+'_'+s.id,tipo:'egreso_variable',concepto:s.concepto,banco:mod.label,monto_ars:+s.monto,monto_usd:0,origen:'modulo'});
+        const esArr=modKey==='arrendamientos';
+        const montoArs=esArr
+          ?((+s.tn_soja||0)*getGrainPrice('soja',mdata.key).v+(+s.tn_maiz||0)*getGrainPrice('maiz',mdata.key).v)*getTcMay()
+          :(s.moneda==='usd'?(+s.monto||0)*getTcMin():(+s.monto||0));
+        if(montoArs<=0)return;
+        if(s.fecha_vto && s.fecha_vto===fechaKey){
+          // Tiene fecha exacta — aparece ese día
+          movs.push({id:'egr_'+modKey+'_'+s.id,tipo:'egreso_variable',concepto:s.concepto,banco:mod.label,monto_ars:montoArs,monto_usd:s.moneda==='usd'?(+s.monto||0):0,origen:'modulo'});
+        } else if(!s.fecha_vto && mdata.key===mesKey){
+          // Sin fecha exacta — aparece el día 1 del mes
+          const diaNum=parseInt(fechaKey.split('-')[2]);
+          if(diaNum===1){
+            movs.push({id:'egr_'+modKey+'_'+s.id,tipo:'egreso_variable',concepto:s.concepto,banco:mod.label,monto_ars:montoArs,monto_usd:s.moneda==='usd'?(+s.monto||0):0,origen:'modulo'});
+          }
+        }
       });
     });
-  }
+  });
   // 3. Ventas reales confirmadas en este día
   ventasReales.filter(v=>v.fecha===fechaKey).forEach(v=>{
     const px=getGrainPrice(v.grano,mesKey).v;
@@ -1799,7 +1799,13 @@ function editLoan(id,field,val){
   if(!loanEdits[id]){const l=LOANS.find(x=>x.id===id)||extraLoans.find(x=>x.id===id);if(l)loanEdits[id]={...l};}
   if(!loanEdits[id])loanEdits[id]={};
   loanEdits[id][field]=(field==='monto_ars'||field==='monto_usd')?(val===''?null:+val):val;
-  scheduleFirestoreSave();renderAll();
+  scheduleFirestoreSave();
+  // Solo re-render en campos numéricos; en texto solo guardar para no perder el foco
+  if(field==='monto_ars'||field==='monto_usd'){
+    const openIds=Array.from(document.querySelectorAll('.section-body.open')).map(el=>el.id);
+    renderTabContent();
+    openIds.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('open');});
+  }
 }
 function addLoan(){
   if(isReadOnly)return;
@@ -1818,11 +1824,30 @@ function editEgreso(modKey,key,si,field,val){
   if(!mdata||!mdata.subItems[si])return;
   const numFields=['monto','tn_soja','tn_maiz'];
   mdata.subItems[si][field]=numFields.includes(field)?(+val||0):val;
+
+  // FIX 3: si cambia la fecha de vencimiento y el mes no coincide con el mes actual,
+  // mover el subItem al mes correspondiente
+  if(field==='fecha_vto' && val){
+    const mesVto=val.substring(0,7);
+    if(mesVto !== key){
+      const itemMovido=mdata.subItems.splice(si,1)[0];
+      const mdataDest=egresoModules[modKey].items.find(i=>i.key===mesVto);
+      if(mdataDest){
+        mdataDest.subItems.push(itemMovido);
+      } else {
+        // mes fuera del rango, dejarlo donde está (restaurar)
+        mdata.subItems.splice(si,0,itemMovido);
+      }
+    }
+  }
+
   scheduleFirestoreSave();
-  // Solo re-render la fila afectada para no perder el foco
-  const openIds=Array.from(document.querySelectorAll('.section-body.open')).map(el=>el.id);
-  renderTabContent();
-  openIds.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('open');});
+  // No re-render en campos de texto para no perder el foco; solo en numéricos/fecha
+  if(field==='monto'||field==='tn_soja'||field==='tn_maiz'||field==='fecha_vto'||field==='moneda'){
+    const openIds=Array.from(document.querySelectorAll('.section-body.open')).map(el=>el.id);
+    renderTabContent();
+    openIds.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('open');});
+  }
 }
 function addEgreso(modKey,key,bodyId){
   if(isReadOnly)return;
