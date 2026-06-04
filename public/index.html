@@ -630,6 +630,15 @@ window._loadFirestoreData = async function(){
       }
       const d=snap.data();
 
+      // Restaurar cuotas eliminadas PRIMERO (antes de loanEdits)
+      if(d.deletedLoanIds && Array.isArray(d.deletedLoanIds)){
+        deletedLoanIds = new Set(d.deletedLoanIds);
+        d.deletedLoanIds.forEach(id=>{
+          const i=LOANS.findIndex(l=>l.id===id);
+          if(i>=0){LOANS.splice(i,1);delete loanEdits[id];}
+        });
+      }
+
       // Cargar loanEdits — solo los que vienen de Firestore, no reemplazar los defaults
       if(d.loanEdits && Object.keys(d.loanEdits).length > 0){
         Object.assign(loanEdits, d.loanEdits);
@@ -739,14 +748,28 @@ async function fetchTC(){
 
 async function fetchGranosLive(){
   if(NETLIFY_BASE.includes('TU-SITIO')){grainLive.soja={...FALLBACK_SOJA};grainLive.maiz={...FALLBACK_MAIZ};dataStatus.granos='fallback';renderAll();return;}
-  try{
-    const res=await fetch(FN_AGRO,{signal:AbortSignal.timeout(10000)});
-    if(!res.ok)throw new Error('HTTP '+res.status);
-    const data=await res.json();
-    if(data.ok){if(data.soja&&Object.keys(data.soja).length>0)grainLive.soja=data.soja;if(data.maiz&&Object.keys(data.maiz).length>0)grainLive.maiz=data.maiz;dataStatus.granos='live';}
-    else{grainLive.soja={...FALLBACK_SOJA};grainLive.maiz={...FALLBACK_MAIZ};dataStatus.granos='fallback';}
-    renderAll();
-  }catch(e){grainLive.soja={...FALLBACK_SOJA};grainLive.maiz={...FALLBACK_MAIZ};dataStatus.granos='fallback';renderAll();}
+  // Reintentar hasta 2 veces si falla (función fría en Netlify)
+  let intentos=0;
+  while(intentos<2){
+    try{
+      intentos++;
+      const res=await fetch(FN_AGRO,{signal:AbortSignal.timeout(20000)});
+      if(!res.ok)throw new Error('HTTP '+res.status);
+      const data=await res.json();
+      if(data.ok&&data.soja&&Object.keys(data.soja).length>0){
+        grainLive.soja=data.soja;
+        grainLive.maiz=data.maiz&&Object.keys(data.maiz).length>0?data.maiz:{...FALLBACK_MAIZ};
+        dataStatus.granos='live';
+      } else {
+        grainLive.soja={...FALLBACK_SOJA};grainLive.maiz={...FALLBACK_MAIZ};dataStatus.granos='fallback';
+      }
+      renderAll();
+      break;
+    }catch(e){
+      if(intentos>=2){grainLive.soja={...FALLBACK_SOJA};grainLive.maiz={...FALLBACK_MAIZ};dataStatus.granos='fallback';renderAll();}
+      else await new Promise(r=>setTimeout(r,2000)); // esperar 2s antes de reintentar
+    }
+  }
 }
 
 async function fetchFinancieros(){
@@ -755,12 +778,17 @@ async function fetchFinancieros(){
     const res = await fetch(FN_FIN, {signal: AbortSignal.timeout(12000)});
     if(!res.ok) throw new Error('HTTP '+res.status);
     const data = await res.json();
-    if(data.ok && data.dolar_futuro && Object.keys(data.dolar_futuro).length > 0){
+    // Aceptar respuesta si viene ok aunque sea con pocos contratos
+    if(data.dolar_futuro && Object.keys(data.dolar_futuro).length > 0){
       dolarFuturo = data.dolar_futuro;
       dataStatus.fin = 'live';
       dataStatus.finFuente = data.source||'Primary';
-    } else {
+    } else if(data.ok === false){
       dataStatus.fin = 'error';
+    } else {
+      // Llegó respuesta pero sin datos — marcar stale, no error
+      dataStatus.fin = 'stale';
+      dataStatus.finFuente = '';
     }
   } catch(e){
     dataStatus.fin = 'error';
@@ -1283,7 +1311,7 @@ function renderPrecios(){
     <div class="precios-grid">${sojaItems}</div></div>
   <div class="precios-panel"><h4><span class="status-dot ${dataStatus.granos==='live'?'live':dataStatus.granos==='fallback'?'stale':'error'}"></span>FUTUROS MAÍZ ROSARIO (MatbaRofex / A3)</h4>
     <div class="precios-grid">${maizItems}</div></div>
-  <div class="precios-panel"><h4><span class="status-dot ${dataStatus.fin==='live'?'live':'error'}"></span>FUTUROS FINANCIEROS — DÓLAR ROFEX ${dataStatus.finFuente?`<span class="badge live" style="margin-left:6px;">${dataStatus.finFuente}</span>`:''}</h4>
+  <div class="precios-panel"><h4><span class="status-dot ${dataStatus.fin==='live'?'live':dataStatus.fin==='stale'?'stale':'error'}"></span>FUTUROS FINANCIEROS — DÓLAR ROFEX ${dataStatus.finFuente?`<span class="badge live" style="margin-left:6px;">${dataStatus.finFuente}</span>`:''}</h4>
     <div class="precios-grid">${dolarItems}</div></div>`;
 }
 function renderCreditos(){
