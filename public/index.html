@@ -429,10 +429,10 @@ body{font-family:'IBM Plex Sans',sans-serif;font-size:13px;background:var(--bg);
 // ============================================================
 // CONFIG
 // ============================================================
-const NETLIFY_BASE = "https://flujofondosagro.netlify.app"; // <-- ya lo tenés configurado
-const FN_AGRO = `${NETLIFY_BASE}/.netlify/functions/futuros-agro`;
-const FN_FIN  = `${NETLIFY_BASE}/.netlify/functions/futuros-financieros`;
-const FN_IOL  = `${NETLIFY_BASE}/.netlify/functions/futuros-iol`;
+const VERCEL_BASE = ""; // vacío = URL relativa, funciona en cualquier dominio Vercel
+const FN_AGRO = `${VERCEL_BASE}/api/futuros-agro`;
+const FN_FIN  = `${VERCEL_BASE}/api/futuros-financieros`;
+const FN_IOL  = `${VERCEL_BASE}/api/futuros-financieros`; // alias, mismo endpoint
 const API_TC  = "https://dolarapi.com/v1/dolares";
 
 // ============================================================
@@ -458,8 +458,8 @@ let currentMonthIdx=0,currentTab='mensual';
 let isReadOnly=false;
 let saveTimer=null;
 
-const FALLBACK_SOJA={'2026-06':330,'2026-07':335,'2026-09':337.7,'2026-11':343,'2027-01':338,'2027-05':336,'2027-07':345};
-const FALLBACK_MAIZ={'2026-07':168,'2026-09':170,'2026-11':172,'2027-01':174,'2027-03':176,'2027-05':178};
+const FALLBACK_SOJA={'2026-07':324,'2026-09':331,'2026-11':334,'2027-05':326,'2027-07':338};
+const FALLBACK_MAIZ={'2026-07':178,'2026-09':183};
 
 // ============================================================
 // DATOS CREDITICIOS
@@ -747,7 +747,7 @@ async function fetchTC(){
 }
 
 async function fetchGranosLive(){
-  if(NETLIFY_BASE.includes('TU-SITIO')){grainLive.soja={...FALLBACK_SOJA};grainLive.maiz={...FALLBACK_MAIZ};dataStatus.granos='fallback';renderAll();return;}
+  // Vercel: siempre activo — sin chequeo de URL
   // Reintentar hasta 2 veces si falla (función fría en Netlify)
   let intentos=0;
   while(intentos<2){
@@ -773,7 +773,7 @@ async function fetchGranosLive(){
 }
 
 async function fetchFinancieros(){
-  if(NETLIFY_BASE.includes('TU-SITIO')) return;
+  // Vercel: siempre activo
   try {
     const res = await fetch(FN_FIN, {signal: AbortSignal.timeout(12000)});
     if(!res.ok) throw new Error('HTTP '+res.status);
