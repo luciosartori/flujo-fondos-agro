@@ -780,8 +780,9 @@ async function fetchFinancieros(){
     const data = await res.json();
     // Aceptar respuesta si viene ok aunque sea con pocos contratos
     if(data.dolar_futuro && Object.keys(data.dolar_futuro).length > 0){
-      dolarFuturo = data.dolar_futuro;
-      dataStatus.fin = 'live';
+      // Filtrar valores null o 0
+      dolarFuturo = Object.fromEntries(Object.entries(data.dolar_futuro).filter(([,v])=>v!=null&&v>0));
+      dataStatus.fin = Object.keys(dolarFuturo).length > 0 ? 'live' : 'error';
       dataStatus.finFuente = data.source||'Primary';
     } else if(data.ok === false){
       dataStatus.fin = 'error';

@@ -48,13 +48,13 @@ export default async function handler(req, res) {
     );
     results.forEach(r => { if (r.status === "fulfilled" && r.value) dolarFuturo[r.value.mesKey] = r.value.precio; });
 
-    // Para JUN26 vencido usar TC spot
-    if (!dolarFuturo["2026-06"]) dolarFuturo["2026-06"] = null;
+    // Filtrar valores null — no enviar JUN26 si no hay precio
+    const dolarFuturoLimpio = Object.fromEntries(Object.entries(dolarFuturo).filter(([,v])=>v!=null&&v>0));
 
     return res.status(200).json({
       ok: true, source: "Primary_reMarkets",
-      dolar_futuro: dolarFuturo,
-      contratos: Object.keys(dolarFuturo).filter(k => dolarFuturo[k]).length,
+      dolar_futuro: dolarFuturoLimpio,
+      contratos: Object.keys(dolarFuturoLimpio).length,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
