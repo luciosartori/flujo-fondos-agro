@@ -792,8 +792,11 @@ async function fetchFinancieros(){
       dataStatus.finFuente = '';
     }
   } catch(e){
-    dataStatus.fin = 'error';
+    // Solo marcar error si no llegaron datos
+    if(Object.keys(dolarFuturo).length === 0) dataStatus.fin = 'error';
+    else dataStatus.fin = 'live'; // datos cargados aunque hubo error parcial
   }
+  renderAll();
 }
 
 async function fetchAllData(){
@@ -1054,7 +1057,7 @@ function renderStockBar(flow){
       <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;margin-top:4px;">
         <div>TC BNA: <b style="color:${dataStatus.tc==='live'?'#166534':'#8B2020'}">${dataStatus.tc.toUpperCase()}</b></div>
         <div>Futuros agro: <b style="color:${dataStatus.granos==='live'?'#166534':dataStatus.granos==='fallback'?'#7A4F0A':'#8B2020'}">${dataStatus.granos.toUpperCase()}</b></div>
-        <div>Futuros fin: <b style="color:${dataStatus.fin==='live'?'#166534':'#8B2020'}">${dataStatus.fin.toUpperCase()}</b></div>
+        <div>Futuros fin: <b style="color:${dataStatus.fin==='live'?'#166534':dataStatus.fin==='loading'?'#92400E':dataStatus.fin==='stale'?'#92400E':'#8B2020'}">${dataStatus.fin==='live'&&Object.keys(dolarFuturo).length>0?'LIVE ('+Object.keys(dolarFuturo).length+' contratos)':dataStatus.fin.toUpperCase()}</b></div>
         <div style="margin-top:4px;">Firebase: <b style="color:${window._currentUser?'#166534':'#7A4F0A'}">${window._currentUser?'CONECTADO':'SOLO LECTURA'}</b></div>
         <div style="margin-top:4px;">Ventas registradas: <b>${ventasReales.length}</b></div>
       </div>
