@@ -257,6 +257,43 @@ body{font-family:'IBM Plex Sans',sans-serif;font-size:13px;background:var(--bg);
 .saldo-card .saldo-val{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:600;}
 .saldo-card input{width:100%;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;padding:3px 6px;border:0.5px solid var(--border);border-radius:5px;background:var(--bg);color:var(--text);margin-top:2px;}
 .saldo-card input:focus{outline:none;border-color:var(--accent);}
+/* BANCOS PANEL */
+.bancos-panel{background:var(--bg2);border:0.5px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:16px;}
+.bancos-panel-title{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.bancos-grid{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.banco-card{flex:1;min-width:170px;background:var(--bg);border:0.5px solid var(--border);border-radius:7px;padding:9px 12px;position:relative;}
+.banco-card-nombre{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:4px;display:flex;align-items:center;gap:6px;}
+.banco-card-saldo{font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:700;color:var(--text);}
+.banco-card-saldo.neg{color:var(--red);}
+.banco-card-fecha{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text3);margin-top:2px;}
+.banco-card-input{width:100%;font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;padding:3px 6px;border:0.5px solid var(--border);border-radius:4px;background:var(--bg2);color:var(--text);margin-top:4px;}
+.banco-card-input:focus{outline:none;border-color:var(--accent);}
+.banco-del-btn{position:absolute;top:6px;right:7px;font-size:10px;background:none;border:none;color:var(--text3);cursor:pointer;padding:0;line-height:1;}
+.banco-del-btn:hover{color:var(--red);}
+.bancos-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.banco-add-form{display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex:1;}
+.banco-add-form input{font-size:11px;font-family:'IBM Plex Mono',monospace;padding:4px 8px;border:0.5px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);}
+.banco-add-form input:focus{outline:none;border-color:var(--accent);}
+.banco-import-btn{font-size:11px;font-family:'IBM Plex Mono',monospace;padding:5px 12px;border:0.5px solid var(--accent);border-radius:5px;cursor:pointer;background:var(--bg2);color:var(--accent);display:flex;align-items:center;gap:5px;white-space:nowrap;transition:all .15s;}
+.banco-import-btn:hover{background:var(--accent);color:white;}
+.banco-saldo-total{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text2);padding:6px 10px;background:var(--bg);border-radius:5px;border:0.5px solid var(--border);}
+/* MODAL IMPORT */
+.import-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999;display:flex;align-items:center;justify-content:center;}
+.import-modal{background:var(--bg);border:0.5px solid var(--border);border-radius:12px;padding:24px;width:560px;max-width:95vw;max-height:85vh;overflow-y:auto;}
+.import-modal h3{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;margin-bottom:14px;color:var(--text);}
+.import-drop-zone{border:1.5px dashed var(--border2);border-radius:8px;padding:28px;text-align:center;cursor:pointer;color:var(--text3);font-family:'IBM Plex Mono',monospace;font-size:12px;transition:all .2s;margin-bottom:12px;}
+.import-drop-zone:hover,.import-drop-zone.drag-over{border-color:var(--accent);background:var(--bg2);color:var(--accent);}
+.import-preview{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text2);background:var(--bg2);border-radius:6px;padding:10px;max-height:220px;overflow-y:auto;margin-bottom:12px;}
+.import-preview table{width:100%;border-collapse:collapse;}
+.import-preview td,.import-preview th{padding:3px 8px;text-align:left;border-bottom:0.5px solid var(--border);}
+.import-preview th{color:var(--text3);font-size:10px;}
+.import-row-pos{color:var(--green);}
+.import-row-neg{color:var(--red);}
+.import-modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:4px;}
+.import-cancel-btn{font-family:'IBM Plex Mono',monospace;font-size:12px;padding:6px 16px;border:0.5px solid var(--border);border-radius:5px;cursor:pointer;background:var(--bg2);color:var(--text2);}
+.import-confirm-btn{font-family:'IBM Plex Mono',monospace;font-size:12px;padding:6px 16px;border:none;border-radius:5px;cursor:pointer;background:var(--green);color:white;font-weight:700;}
+.import-confirm-btn:disabled{opacity:.4;cursor:not-allowed;}
+.import-banco-sel{font-family:'IBM Plex Mono',monospace;font-size:12px;padding:5px 8px;border:0.5px solid var(--border);border-radius:5px;background:var(--bg2);color:var(--text);margin-bottom:10px;width:100%;}
 .caja-day{border:0.5px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden;}
 .caja-day-header{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;cursor:pointer;user-select:none;transition:background .15s;}
 .caja-day-header:hover{background:var(--bg3);}
@@ -302,6 +339,22 @@ body{font-family:'IBM Plex Sans',sans-serif;font-size:13px;background:var(--bg);
 .cuota-fecha-input{width:120px;font-size:11px;font-family:'IBM Plex Mono',monospace;padding:3px 6px;border:0.5px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);}
 .cuota-fecha-input:focus{outline:none;border-color:var(--accent);}
 .caja-necesita-venta{background:var(--amber-bg);border:0.5px solid #D4A853;border-radius:6px;padding:7px 12px;font-size:11px;color:var(--amber);font-family:'IBM Plex Mono',monospace;margin-top:6px;display:flex;align-items:center;gap:6px;}
+/* VENCIMIENTOS PAGADOS */
+.caja-pagar-btn{font-size:10px;font-family:'IBM Plex Mono',monospace;padding:3px 8px;border:0.5px solid var(--border2);border-radius:4px;cursor:pointer;background:var(--bg2);color:var(--text3);white-space:nowrap;transition:all .15s;flex-shrink:0;}
+.caja-pagar-btn:hover{background:var(--green-bg);border-color:var(--green);color:var(--green);}
+.caja-pagar-btn.ya-pagado{background:var(--green-bg);border-color:var(--green);color:var(--green);}
+.caja-mov-row.pagado .caja-mov-concepto{opacity:.6;}
+.caja-mov-row.pagado .caja-mov-concepto span:not(.caja-pagado-badge){text-decoration:line-through;}
+.caja-mov-row.pagado .caja-mov-monto{color:var(--text3)!important;}
+.caja-pagado-badge{font-size:9px;font-family:'IBM Plex Mono',monospace;padding:2px 6px;border-radius:3px;background:var(--green-bg);color:var(--green);font-weight:700;flex-shrink:0;margin-left:4px;}
+/* DIAS PASADOS */
+.caja-pasados-toggle{background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;padding:10px 16px;margin-bottom:8px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text2);display:flex;align-items:center;justify-content:space-between;transition:background .15s;}
+.caja-pasados-toggle:hover{background:var(--bg3);}
+.caja-pasados-section{border-left:2px solid var(--border2);padding-left:0;margin-bottom:12px;}
+.caja-day-header.pasado{opacity:.72;background:var(--bg2);}
+.caja-day-header.pasado:hover{opacity:1;}
+.caja-badge.vencido-badge{background:#3D1A1A;color:#F87171;border-color:#7F1D1D;}
+.caja-badge.vencido-badge{background:#3D1A1A;color:#F87171;}
 </style>
 </head>
 <body>
@@ -429,10 +482,9 @@ body{font-family:'IBM Plex Sans',sans-serif;font-size:13px;background:var(--bg);
 // ============================================================
 // CONFIG
 // ============================================================
-const VERCEL_BASE = ""; // vacío = URL relativa, funciona en cualquier dominio Vercel
-const FN_AGRO = `${VERCEL_BASE}/api/futuros-agro`;
-const FN_FIN  = `${VERCEL_BASE}/api/futuros-financieros`;
-const FN_IOL  = `${VERCEL_BASE}/api/futuros-financieros`; // alias, mismo endpoint
+const NETLIFY_BASE = "https://TU-SITIO.netlify.app"; // <-- ya lo tenés configurado
+const FN_AGRO = `${NETLIFY_BASE}/.netlify/functions/futuros-agro`;
+const FN_FIN  = `${NETLIFY_BASE}/.netlify/functions/futuros-financieros`;
 const API_TC  = "https://dolarapi.com/v1/dolares";
 
 // ============================================================
@@ -458,8 +510,8 @@ let currentMonthIdx=0,currentTab='mensual';
 let isReadOnly=false;
 let saveTimer=null;
 
-const FALLBACK_SOJA={'2026-07':324,'2026-09':331,'2026-11':334,'2027-05':326,'2027-07':338};
-const FALLBACK_MAIZ={'2026-07':178,'2026-09':183};
+const FALLBACK_SOJA={'2026-06':0,'2026-07':335,'2026-09':337.7,'2026-11':343,'2027-01':0,'2027-05':336,'2027-07':345};
+const FALLBACK_MAIZ={'2026-07':168,'2026-09':170,'2026-11':172,'2027-01':174,'2027-03':176,'2027-05':178};
 
 // ============================================================
 // DATOS CREDITICIOS
@@ -516,11 +568,11 @@ LOANS.forEach(l=>{loanEdits[l.id]={...l};});
 let extraLoans=[];
 
 let egresoModules={
-  operativos:{label:'Gastos operativos',items:MONTHS.map(({key})=>({key,subItems:[{id:'op1',concepto:'Combustible',monto:0,moneda:'ars'},{id:'op2',concepto:'Mano de obra',monto:0,moneda:'ars'}]}))},
-  produccion:{label:'Costos de producción',items:MONTHS.map(({key})=>({key,subItems:[{id:'pr1',concepto:'Semillas',monto:0,moneda:'ars'},{id:'pr2',concepto:'Agroquímicos',monto:0,moneda:'ars'},{id:'pr3',concepto:'Fertilizantes',monto:0,moneda:'ars'}]}))},
-  comercializacion:{label:'Gastos de comercialización',items:MONTHS.map(({key})=>({key,subItems:[{id:'co1',concepto:'Flete',monto:0,moneda:'ars'},{id:'co2',concepto:'Comisiones',monto:0,moneda:'ars'},{id:'co3',concepto:'Sellados',monto:0,moneda:'ars'}]}))},
-  arrendamientos:{label:'Arrendamientos',tipoEspecial:'tn',items:MONTHS.map(({key})=>({key,subItems:[{id:'ar1',concepto:'Alquiler campo',tn_soja:0,tn_maiz:0,fecha_vto:''}]}))},
-  estructura:{label:'Gastos de estructura',items:MONTHS.map(({key})=>({key,subItems:[{id:'es1',concepto:'Administración',monto:0,moneda:'ars'},{id:'es2',concepto:'Contaduría',monto:0,moneda:'ars'}]}))},
+  operativos:{label:'Gastos operativos',items:MONTHS.map(({key})=>({key,subItems:[{id:'op1',concepto:'Combustible',monto:0},{id:'op2',concepto:'Mano de obra',monto:0}]}))},
+  produccion:{label:'Costos de producción',items:MONTHS.map(({key})=>({key,subItems:[{id:'pr1',concepto:'Semillas',monto:0},{id:'pr2',concepto:'Agroquímicos',monto:0},{id:'pr3',concepto:'Fertilizantes',monto:0}]}))},
+  comercializacion:{label:'Gastos de comercialización',items:MONTHS.map(({key})=>({key,subItems:[{id:'co1',concepto:'Flete',monto:0},{id:'co2',concepto:'Comisiones',monto:0},{id:'co3',concepto:'Sellados',monto:0}]}))},
+  arrendamientos:{label:'Arrendamientos',items:MONTHS.map(({key})=>({key,subItems:[{id:'ar1',concepto:'Alquiler campo',monto:0}]}))},
+  estructura:{label:'Gastos de estructura',items:MONTHS.map(({key})=>({key,subItems:[{id:'es1',concepto:'Administración',monto:0},{id:'es2',concepto:'Contaduría',monto:0}]}))},
 };
 
 let ventaOverrides={};
@@ -530,13 +582,19 @@ MONTHS.forEach(({key})=>{ventaOverrides[key]={soja:null,maiz:null};});
 // FLUJO DE CAJA DIARIO
 // ============================================================
 // Saldo inicial de caja ingresado por el usuario
-let cajaInicial = { ars: 0, usd: 0 };
+let cajaInicial = { ars: 0, usd: 0 }; // legacy, kept for compat
+// Saldos por banco: { bancoId: { nombre, saldoArs, saldoUsd, fechaSaldo:'YYYY-MM-DD' } }
+let saldoBancos = {};
+// Movimientos bancarios importados desde Excel: [{ id, bancoId, fecha, concepto, monto, saldo, nroRef }]
+let movBancarios = [];
 
 // Fechas exactas de vencimiento de cuotas: { loanId: 'YYYY-MM-DD' }
 let cuotaFechas = {};
 
 // Movimientos diarios manuales: [{ id, fecha:'YYYY-MM-DD', concepto, monto_ars, monto_usd, tipo:'ingreso'|'egreso', obs }]
 let cajaMovimientos = [];
+// Vencimientos marcados como pagados: { 'cuotaId_fecha': { pagadoEn, pagadoPor } }
+let vencimientosPagados = {};
 
 // ============================================================
 // FIREBASE AUTH
@@ -596,8 +654,11 @@ async function saveToFirestore(){
       ventasReales,
       stockInicial: STOCK_INICIAL,
       cajaInicial,
+      saldoBancos,
+      movBancarios,
       cuotaFechas,
       cajaMovimientos,
+      vencimientosPagados,
       egresos: Object.fromEntries(
         Object.entries(egresoModules).map(([k,mod])=>[k,
           Object.fromEntries(mod.items.map(item=>[item.key,item.subItems]))
@@ -606,7 +667,7 @@ async function saveToFirestore(){
       updatedAt: new Date().toISOString(),
       updatedBy: window._currentUser.email
     };
-    await setDoc(doc(db,'flujo','datos'), payload, {merge: true});
+    await setDoc(doc(db,'flujo','datos'),payload);
     setSaveStatus('saved');
     setTimeout(()=>setSaveStatus('idle'),3000);
   }catch(e){
@@ -622,31 +683,16 @@ window._loadFirestoreData = async function(){
 
     // Escuchar cambios en tiempo real (multi-usuario)
     onSnapshot(docRef,snap=>{
-      // Si no existe el documento aún, NO guardar vacío — solo renderizar con defaults
-      if(!snap.exists()){
-        renderAll();
-        setSaveStatus('idle');
-        return;
-      }
+      if(!snap.exists())return;
       const d=snap.data();
 
-      // Restaurar cuotas eliminadas PRIMERO (antes de loanEdits)
-      if(d.deletedLoanIds && Array.isArray(d.deletedLoanIds)){
-        deletedLoanIds = new Set(d.deletedLoanIds);
-        d.deletedLoanIds.forEach(id=>{
-          const i=LOANS.findIndex(l=>l.id===id);
-          if(i>=0){LOANS.splice(i,1);delete loanEdits[id];}
-        });
-      }
-
-      // Cargar loanEdits — solo los que vienen de Firestore, no reemplazar los defaults
-      if(d.loanEdits && Object.keys(d.loanEdits).length > 0){
-        Object.assign(loanEdits, d.loanEdits);
-      }
+      // Cargar loanEdits
+      if(d.loanEdits) Object.assign(loanEdits,d.loanEdits);
 
       // Cargar extraLoans
       if(d.extraLoans&&Array.isArray(d.extraLoans)){
         extraLoans=d.extraLoans;
+        // Sincronizar loanEdits para extraLoans
         extraLoans.forEach(l=>{if(!loanEdits[l.id])loanEdits[l.id]={...l};});
       }
 
@@ -673,15 +719,7 @@ window._loadFirestoreData = async function(){
           if(!egresoModules[modKey])return;
           Object.entries(monthMap).forEach(([key,subItems])=>{
             const item=egresoModules[modKey].items.find(i=>i.key===key);
-            if(item&&Array.isArray(subItems)){
-              item.subItems=subItems.map(s=>({
-                ...s,
-                moneda:s.moneda||'ars',
-                fecha_vto:s.fecha_vto||'',
-                tn_soja:s.tn_soja||0,
-                tn_maiz:s.tn_maiz||0,
-              }));
-            }
+            if(item&&Array.isArray(subItems)) item.subItems=subItems;
           });
         });
       }
@@ -697,8 +735,11 @@ window._loadFirestoreData = async function(){
 
       // Cargar datos de flujo de caja
       if(d.cajaInicial) cajaInicial = d.cajaInicial;
+      if(d.saldoBancos && typeof d.saldoBancos==='object') saldoBancos = d.saldoBancos;
+      if(d.movBancarios && Array.isArray(d.movBancarios)) movBancarios = d.movBancarios;
       if(d.cuotaFechas) cuotaFechas = d.cuotaFechas;
       if(d.cajaMovimientos && Array.isArray(d.cajaMovimientos)) cajaMovimientos = d.cajaMovimientos;
+      if(d.vencimientosPagados && typeof d.vencimientosPagados==='object') vencimientosPagados = d.vencimientosPagados;
 
       renderAll();
       setSaveStatus('idle');
@@ -747,56 +788,26 @@ async function fetchTC(){
 }
 
 async function fetchGranosLive(){
-  // Vercel: siempre activo — sin chequeo de URL
-  // Reintentar hasta 2 veces si falla (función fría en Netlify)
-  let intentos=0;
-  while(intentos<2){
-    try{
-      intentos++;
-      const res=await fetch(FN_AGRO,{signal:AbortSignal.timeout(20000)});
-      if(!res.ok)throw new Error('HTTP '+res.status);
-      const data=await res.json();
-      if(data.ok&&data.soja&&Object.keys(data.soja).length>0){
-        grainLive.soja=data.soja;
-        grainLive.maiz=data.maiz&&Object.keys(data.maiz).length>0?data.maiz:{...FALLBACK_MAIZ};
-        dataStatus.granos='live';
-      } else {
-        grainLive.soja={...FALLBACK_SOJA};grainLive.maiz={...FALLBACK_MAIZ};dataStatus.granos='fallback';
-      }
-      renderAll();
-      break;
-    }catch(e){
-      if(intentos>=2){grainLive.soja={...FALLBACK_SOJA};grainLive.maiz={...FALLBACK_MAIZ};dataStatus.granos='fallback';renderAll();}
-      else await new Promise(r=>setTimeout(r,2000)); // esperar 2s antes de reintentar
-    }
-  }
+  if(NETLIFY_BASE.includes('TU-SITIO')){grainLive.soja={...FALLBACK_SOJA};grainLive.maiz={...FALLBACK_MAIZ};dataStatus.granos='fallback';renderAll();return;}
+  try{
+    const res=await fetch(FN_AGRO,{signal:AbortSignal.timeout(10000)});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    if(data.ok){if(data.soja&&Object.keys(data.soja).length>0)grainLive.soja=data.soja;if(data.maiz&&Object.keys(data.maiz).length>0)grainLive.maiz=data.maiz;dataStatus.granos='live';}
+    else{grainLive.soja={...FALLBACK_SOJA};grainLive.maiz={...FALLBACK_MAIZ};dataStatus.granos='fallback';}
+    renderAll();
+  }catch(e){grainLive.soja={...FALLBACK_SOJA};grainLive.maiz={...FALLBACK_MAIZ};dataStatus.granos='fallback';renderAll();}
 }
 
 async function fetchFinancieros(){
-  // Vercel: siempre activo
-  try {
-    const res = await fetch(FN_FIN, {signal: AbortSignal.timeout(12000)});
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const data = await res.json();
-    // Aceptar respuesta si viene ok aunque sea con pocos contratos
-    if(data.dolar_futuro && Object.keys(data.dolar_futuro).length > 0){
-      // Filtrar valores null o 0
-      dolarFuturo = Object.fromEntries(Object.entries(data.dolar_futuro).filter(([,v])=>v!=null&&v>0));
-      dataStatus.fin = Object.keys(dolarFuturo).length > 0 ? 'live' : 'error';
-      dataStatus.finFuente = data.source||'Primary';
-    } else if(data.ok === false){
-      dataStatus.fin = 'error';
-    } else {
-      // Llegó respuesta pero sin datos — marcar stale, no error
-      dataStatus.fin = 'stale';
-      dataStatus.finFuente = '';
-    }
-  } catch(e){
-    // Solo marcar error si no llegaron datos
-    if(Object.keys(dolarFuturo).length === 0) dataStatus.fin = 'error';
-    else dataStatus.fin = 'live'; // datos cargados aunque hubo error parcial
-  }
-  renderAll();
+  if(NETLIFY_BASE.includes('TU-SITIO'))return;
+  try{
+    const res=await fetch(FN_FIN,{signal:AbortSignal.timeout(10000)});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    if(data.ok&&data.dolar_futuro)dolarFuturo=data.dolar_futuro;
+    dataStatus.fin='live';
+  }catch(e){dataStatus.fin='error';}
 }
 
 async function fetchAllData(){
@@ -837,20 +848,7 @@ function getLoanTotal(key){
 }
 function getEgresoMod(key,modKey){
   const mdata=egresoModules[modKey].items.find(i=>i.key===key);
-  let t=0;
-  if(!mdata)return 0;
-  if(modKey==='arrendamientos'){
-    mdata.subItems.forEach(s=>{
-      t+=(+s.tn_soja||0)*getGrainPrice('soja',key).v*getTcMay();
-      t+=(+s.tn_maiz||0)*getGrainPrice('maiz',key).v*getTcMay();
-    });
-  } else {
-    mdata.subItems.forEach(s=>{
-      if(s.moneda==='usd') t+=(+s.monto||0)*getTcMin();
-      else t+=(+s.monto||0);
-    });
-  }
-  return t;
+  let t=0;if(mdata)mdata.subItems.forEach(s=>t+=(+s.monto||0));return t;
 }
 function getEgresoTotal(key){return Object.keys(egresoModules).reduce((a,k)=>a+getEgresoMod(key,k),0);}
 
@@ -1057,7 +1055,7 @@ function renderStockBar(flow){
       <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;margin-top:4px;">
         <div>TC BNA: <b style="color:${dataStatus.tc==='live'?'#166534':'#8B2020'}">${dataStatus.tc.toUpperCase()}</b></div>
         <div>Futuros agro: <b style="color:${dataStatus.granos==='live'?'#166534':dataStatus.granos==='fallback'?'#7A4F0A':'#8B2020'}">${dataStatus.granos.toUpperCase()}</b></div>
-        <div>Futuros fin: <b style="color:${dataStatus.fin==='live'?'#166534':dataStatus.fin==='loading'?'#92400E':dataStatus.fin==='stale'?'#92400E':'#8B2020'}">${dataStatus.fin==='live'&&Object.keys(dolarFuturo).length>0?'LIVE ('+Object.keys(dolarFuturo).length+' contratos)':dataStatus.fin.toUpperCase()}</b></div>
+        <div>Futuros fin: <b style="color:${dataStatus.fin==='live'?'#166534':'#8B2020'}">${dataStatus.fin.toUpperCase()}</b></div>
         <div style="margin-top:4px;">Firebase: <b style="color:${window._currentUser?'#166534':'#7A4F0A'}">${window._currentUser?'CONECTADO':'SOLO LECTURA'}</b></div>
         <div style="margin-top:4px;">Ventas registradas: <b>${ventasReales.length}</b></div>
       </div>
@@ -1301,10 +1299,7 @@ function renderPrecios(){
   const mesesCotizados=MONTHS.slice(0,24);
   const sojaItems=mesesCotizados.map(({key,y,m})=>{const p=getGrainPrice('soja',key);const isLive=p.src==='live'||p.src==='live-interp';return `<div class="precio-item ${isLive?'live-price':''}"><div class="pi-mes">${MN[m].substring(0,3).toUpperCase()} ${y}</div><div class="pi-val">U$S ${fmt(p.v,1)}</div><div class="pi-src">${p.src.toUpperCase()}</div></div>`;}).join('');
   const maizItems=mesesCotizados.map(({key,y,m})=>{const p=getGrainPrice('maiz',key);const isLive=p.src==='live'||p.src==='live-interp';return `<div class="precio-item ${isLive?'live-price':''}"><div class="pi-mes">${MN[m].substring(0,3).toUpperCase()} ${y}</div><div class="pi-val">U$S ${fmt(p.v,1)}</div><div class="pi-src">${p.src.toUpperCase()}</div></div>`;}).join('');
-  // Para JUN26: si no vino de Primary (contrato vencido), usar TC mayorista como spot
-  const dolarConJun={...dolarFuturo};
-  if(!dolarConJun['2026-06'] && getTcMay()>1){dolarConJun['2026-06']=getTcMay();}
-  const dolarItems=Object.entries(dolarConJun).sort().slice(0,24).map(([key,v])=>{const[y,m]=key.split('-');const esSpot=key==='2026-06'&&!dolarFuturo['2026-06'];return `<div class="precio-item live-price"><div class="pi-mes">${MN[+m-1].substring(0,3).toUpperCase()} ${y}</div><div class="pi-val">$ ${fmt(v,0)}</div><div class="pi-src">${esSpot?'TC SPOT':'DÓLAR FUTURO'}</div></div>`;}).join('')||'<div style="color:var(--text3);font-size:12px;font-family:\'IBM Plex Mono\',monospace;">Sin datos. Configurá Netlify para activar.</div>';
+  const dolarItems=Object.entries(dolarFuturo).sort().slice(0,24).map(([key,v])=>{const[y,m]=key.split('-');return `<div class="precio-item live-price"><div class="pi-mes">${MN[+m-1].substring(0,3).toUpperCase()} ${y}</div><div class="pi-val">$ ${fmt(v,0)}</div><div class="pi-src">DÓLAR FUTURO</div></div>`;}).join('')||'<div style="color:var(--text3);font-size:12px;font-family:\'IBM Plex Mono\',monospace;">Sin datos. Configurá Netlify para activar.</div>';
   return `
   <div class="precios-panel"><h4><span class="status-dot ${dataStatus.tc==='live'?'live':'error'}"></span>TIPOS DE CAMBIO BNA (dolarapi.com)</h4>
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -1315,40 +1310,40 @@ function renderPrecios(){
     <div class="precios-grid">${sojaItems}</div></div>
   <div class="precios-panel"><h4><span class="status-dot ${dataStatus.granos==='live'?'live':dataStatus.granos==='fallback'?'stale':'error'}"></span>FUTUROS MAÍZ ROSARIO (MatbaRofex / A3)</h4>
     <div class="precios-grid">${maizItems}</div></div>
-  <div class="precios-panel"><h4><span class="status-dot ${dataStatus.fin==='live'?'live':dataStatus.fin==='stale'?'stale':'error'}"></span>FUTUROS FINANCIEROS — DÓLAR ROFEX ${dataStatus.finFuente?`<span class="badge live" style="margin-left:6px;">${dataStatus.finFuente}</span>`:''}</h4>
+  <div class="precios-panel"><h4><span class="status-dot ${dataStatus.fin==='live'?'live':'error'}"></span>FUTUROS FINANCIEROS — DÓLAR ROFEX</h4>
     <div class="precios-grid">${dolarItems}</div></div>`;
 }
 function renderCreditos(){
   const all=[...LOANS,...extraLoans];
-  const sorted=[...all].sort((a,b)=>{
-    const fa=cuotaFechas[a.id]||''; const fb=cuotaFechas[b.id]||'';
-    const ea=loanEdits[a.id]||a; const eb=loanEdits[b.id]||b;
-    const ka=fa||(ea.mes||'9999-99'); const kb=fb||(eb.mes||'9999-99');
-    return ka<kb?-1:ka>kb?1:0;
-  });
-  const rows=sorted.map(l=>{
+  const rows=all.map(l=>{
     const e=loanEdits[l.id]||l;
     const tot=(e.monto_ars||0)+(e.monto_usd||0)*getTcMin();
-    const fv=cuotaFechas[l.id]||'';
-    const bc=fv?'var(--green)':'var(--amber)';
-    const sf=fv?'':'<span style="font-size:9px;color:var(--amber);font-family:IBM Plex Mono,monospace;margin-left:3px;">sin fecha</span>';
-    const db=isReadOnly?'':'<button class="del-btn" onclick="delLoan(\''+l.id+'\')">&#x2715;</button>';
-    const d=isReadOnly?'disabled':'';
-    return '<tr>'
-      +'<td><input type="text" value="'+e.mes+'" style="width:84px;" '+d+' oninput="editLoan(\''+l.id+'\',\'mes\',this.value)"></td>'
-      +'<td><input type="date" class="cuota-fecha-input" value="'+fv+'" '+d+' onchange="editCuotaFecha(\''+l.id+'\',this.value)" style="border-color:'+bc+'">'+sf+'</td>'
-      +'<td><input type="text" value="'+e.banco+'" '+d+' oninput="editLoan(\''+l.id+'\',\'banco\',this.value)"></td>'
-      +'<td><input type="text" value="'+e.concepto+'" '+d+' oninput="editLoan(\''+l.id+'\',\'concepto\',this.value)"></td>'
-      +'<td><input type="number" value="'+(e.monto_ars||'')+'" placeholder="ARS" '+d+' oninput="editLoan(\''+l.id+'\',\'monto_ars\',this.value)"></td>'
-      +'<td><input type="number" value="'+(e.monto_usd||'')+'" placeholder="USD" '+d+' oninput="editLoan(\''+l.id+'\',\'monto_usd\',this.value)"></td>'
-      +'<td style="font-family:\'IBM Plex Mono\',monospace;white-space:nowrap;">$ '+fmt(tot)+'</td>'
-      +'<td>'+db+'</td></tr>';
+    const fechaVal=cuotaFechas[l.id]||'';
+    const tieneFecha=!!fechaVal;
+    return `<tr>
+      <td><input type="text" value="${e.mes}" style="width:84px;" ${isReadOnly?'disabled':''} onchange="editLoan('${l.id}','mes',this.value)"></td>
+      <td>
+        <input type="date" class="cuota-fecha-input" value="${fechaVal}" ${isReadOnly?'disabled':''}
+          onchange="editCuotaFecha('${l.id}',this.value)"
+          title="Fecha exacta de vencimiento — aparece en el Flujo de Caja diario"
+          style="border-color:${tieneFecha?'var(--green)':'var(--amber)'}">
+        ${tieneFecha?'':'<span style="font-size:9px;color:var(--amber);font-family:IBM Plex Mono,monospace;margin-left:3px;">sin fecha</span>'}
+      </td>
+      <td><input type="text" value="${e.banco}" ${isReadOnly?'disabled':''} onchange="editLoan('${l.id}','banco',this.value)"></td>
+      <td><input type="text" value="${e.concepto}" ${isReadOnly?'disabled':''} onchange="editLoan('${l.id}','concepto',this.value)"></td>
+      <td><input type="number" value="${e.monto_ars||''}" placeholder="ARS" ${isReadOnly?'disabled':''} onchange="editLoan('${l.id}','monto_ars',this.value)"></td>
+      <td><input type="number" value="${e.monto_usd||''}" placeholder="USD" ${isReadOnly?'disabled':''} onchange="editLoan('${l.id}','monto_usd',this.value)"></td>
+      <td style="font-family:'IBM Plex Mono',monospace;white-space:nowrap;">$ ${fmt(tot)}</td>
+      <td>${isReadOnly?'':'<button class="del-btn" onclick="delLoan(\''+l.id+'\')">✕</button>'}</td>
+    </tr>`;
   }).join('');
-  return '<div class="info-note">La columna <b>FECHA EXACTA VTO.</b> (verde = asignada, naranja = pendiente) hace que la cuota aparezca en el día correcto del Flujo de Caja diario. Se ordenan automáticamente por fecha de vencimiento.</div>'
-    +'<div class="flow-table-wrap"><table class="sub-table">'
-    +'<thead><tr><th>MES</th><th>FECHA EXACTA VTO.</th><th>BANCO/ENTIDAD</th><th>CONCEPTO</th><th>MONTO ARS</th><th>MONTO USD</th><th>TOTAL ARS</th><th></th></tr></thead>'
-    +'<tbody>'+rows+'</tbody></table></div>'
-    +(isReadOnly?'':'<button class="add-row-btn" onclick="addLoan()">+ Agregar cuota</button>');
+  return `
+  <div class="info-note">La columna <b>FECHA EXACTA VTO.</b> (verde = asignada, naranja = pendiente) hace que la cuota aparezca en el día correcto del Flujo de Caja diario.</div>
+  <div class="flow-table-wrap"><table class="sub-table">
+    <thead><tr><th>MES</th><th>FECHA EXACTA VTO.</th><th>BANCO/ENTIDAD</th><th>CONCEPTO</th><th>MONTO ARS</th><th>MONTO USD</th><th>TOTAL ARS</th><th></th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>
+  ${isReadOnly?'':'<button class="add-row-btn" onclick="addLoan()">+ Agregar cuota</button>'}`;
 }
 
 function editCuotaFecha(id,val){
@@ -1363,57 +1358,25 @@ function renderEgresosMod(){
     const grand=MONTHS.reduce((a,{key})=>a+getEgresoMod(key,modKey),0);
     const curMk=MONTHS[currentMonthIdx];
     const mdata=mod.items.find(i=>i.key===curMk.key);
-    const esArrendamiento=modKey==='arrendamientos';
-    const bodyId=`eg-${modKey}`;
-
-    let subRows='';
-    if(mdata){
-      if(esArrendamiento){
-        subRows=mdata.subItems.map((s,si)=>`<tr>
-          <td><input type="text" value="${s.concepto||''}" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'concepto',this.value)"></td>
-          <td><input type="number" step="0.01" min="0" value="${s.tn_soja||''}" placeholder="tn soja" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'tn_soja',this.value)" style="width:90px;"></td>
-          <td style="font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">≈ $ ${fmt((+s.tn_soja||0)*getGrainPrice('soja',curMk.key).v*getTcMay())}</td>
-          <td><input type="number" step="0.01" min="0" value="${s.tn_maiz||''}" placeholder="tn maíz" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'tn_maiz',this.value)" style="width:90px;"></td>
-          <td style="font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">≈ $ ${fmt((+s.tn_maiz||0)*getGrainPrice('maiz',curMk.key).v*getTcMay())}</td>
-          <td><input type="date" value="${s.fecha_vto||''}" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'fecha_vto',this.value)" class="cuota-fecha-input"></td>
-          <td><b style="font-family:'IBM Plex Mono',monospace;">$ ${fmt(((+s.tn_soja||0)*getGrainPrice('soja',curMk.key).v+(+s.tn_maiz||0)*getGrainPrice('maiz',curMk.key).v)*getTcMay())}</b></td>
-          <td>${isReadOnly?'':'<button class="del-btn" onclick="delEgreso(\''+modKey+'\',\''+curMk.key+'\','+si+')">✕</button>'}</td>
-        </tr>`).join('');
-      } else {
-        subRows=mdata.subItems.map((s,si)=>`<tr>
-          <td><input type="text" value="${s.concepto||''}" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'concepto',this.value)"></td>
-          <td>
-            <select style="font-size:11px;font-family:'IBM Plex Mono',monospace;padding:3px 6px;border:0.5px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'moneda',this.value)">
-              <option value="ars" ${(s.moneda||'ars')==='ars'?'selected':''}>ARS $</option>
-              <option value="usd" ${s.moneda==='usd'?'selected':''}>USD U$S</option>
-            </select>
-          </td>
-          <td><input type="number" step="0.01" value="${s.monto||0}" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'monto',this.value)"></td>
-          <td style="font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">${s.moneda==='usd'?'≈ $ '+fmt((+s.monto||0)*getTcMin()):''}</td>
-          <td><input type="date" value="${s.fecha_vto||''}" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'fecha_vto',this.value)" class="cuota-fecha-input" title="Fecha exacta de vencimiento"></td>
-          <td>${isReadOnly?'':'<button class="del-btn" onclick="delEgreso(\''+modKey+'\',\''+curMk.key+'\','+si+')">✕</button>'}</td>
-        </tr>`).join('');
-      }
-    }
-
-    const thead = esArrendamiento
-      ? '<tr><th>CONCEPTO</th><th>TN SOJA</th><th>≈ ARS</th><th>TN MAÍZ</th><th>≈ ARS</th><th>FECHA VTO.</th><th>TOTAL ARS</th><th></th></tr>'
-      : '<tr><th>CONCEPTO</th><th>MONEDA</th><th>MONTO</th><th>≈ ARS</th><th>FECHA VTO.</th><th></th></tr>';
-
+    const subRows=mdata?mdata.subItems.map((s,si)=>`<tr>
+      <td><input type="text" value="${s.concepto}" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'concepto',this.value)"></td>
+      <td><input type="number" value="${s.monto||0}" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'monto',this.value)"></td>
+      <td>${isReadOnly?'':'<button class="del-btn" onclick="delEgreso(\''+modKey+'\',\''+curMk.key+'\','+si+')">✕</button>'}</td>
+    </tr>`).join(''):'';
     return `<div class="section" style="margin-bottom:10px;">
-      <div class="section-header" onclick="toggleSection('${bodyId}')">
+      <div class="section-header" onclick="toggleSection('eg-${modKey}')">
         <h3>${mod.label.toUpperCase()}</h3>
         <div class="stotals"><span>Total período: <b>$ ${fmt(grand)}</b></span></div>
       </div>
-      <div class="section-body open" id="${bodyId}">
+      <div class="section-body" id="eg-${modKey}">
         <div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;">
           <span class="info-note" style="margin:0;">Mes:</span>
           <select onchange="setMonthEg(this.value)" style="font-size:12px;font-family:'IBM Plex Mono',monospace;padding:4px 7px;border:0.5px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);">
             ${MONTHS.map((mk,i)=>`<option value="${i}" ${i===currentMonthIdx?'selected':''}>${MN[mk.m].substring(0,3).toUpperCase()} ${mk.y}</option>`).join('')}
           </select>
         </div>
-        <table class="sub-table"><thead>${thead}</thead><tbody id="eg-body-${modKey}">${subRows}</tbody></table>
-        ${isReadOnly?'':'<button class="add-row-btn" onclick="addEgreso(\''+modKey+'\',\''+curMk.key+'\',\''+bodyId+'\')">+ Agregar subconcepto</button>'}
+        <table class="sub-table"><tr><th>SUBCONCEPTO</th><th>MONTO ARS</th><th></th></tr>${subRows}</table>
+        ${isReadOnly?'':'<button class="add-row-btn" onclick="addEgreso(\''+modKey+'\',\''+curMk.key+'\')">+ Agregar subconcepto</button>'}
         <div class="year-mini">${[2026,2027,2028,2029,2030].map(y=>{const t=MONTHS.filter(mk=>mk.y===y).reduce((a,mk)=>a+getEgresoMod(mk.key,modKey),0);return `<div class="metric"><div class="ml">${y}</div><div class="mv" style="font-size:13px;">$ ${fmt(t)}</div></div>`;}).join('')}</div>
       </div>
     </div>`;
@@ -1445,13 +1408,29 @@ function bindCharts(flow){
 // ============================================================
 // FLUJO DE CAJA DIARIO — RENDER Y LÓGICA
 // ============================================================
+let cajaVerPasados=false;
+
 function getCajaDias(){
   const dias=[];const hoy=new Date();hoy.setHours(0,0,0,0);
+  // Dias pasados (hasta 90 dias atras) que tengan movimientos
+  for(let i=90;i>=1;i--){
+    const d=new Date(hoy);d.setDate(hoy.getDate()-i);
+    const fecha=d.toISOString().split('T')[0];
+    const mesKey=fecha.substring(0,7);
+    const tieneCuota=[...LOANS,...extraLoans].some(l=>cuotaFechas[l.id]===fecha);
+    const tieneManual=cajaMovimientos.some(m=>m.fecha===fecha);
+    const tieneVenta=ventasReales.some(v=>v.fecha===fecha);
+    const tieneBanco=movBancarios.some(m=>m.fecha===fecha);
+    if(tieneCuota||tieneManual||tieneVenta||tieneBanco){
+      dias.push({fecha,mesKey,d,esHoy:false,esPasado:true});
+    }
+  }
+  // Hoy y proximos 30 dias
   for(let i=0;i<30;i++){
     const d=new Date(hoy);d.setDate(hoy.getDate()+i);
     const fecha=d.toISOString().split('T')[0];
     const mesKey=fecha.substring(0,7);
-    dias.push({fecha,mesKey,d,esHoy:i===0});
+    dias.push({fecha,mesKey,d,esHoy:i===0,esPasado:false});
   }
   return dias;
 }
@@ -1470,29 +1449,17 @@ function getCajaMovsDia(fechaKey){
         movs.push({id:'cuota_'+l.id,tipo:'egreso_fijo',concepto:e.concepto,banco:e.banco,monto_ars,monto_usd,origen:'cuota'});
     }
   });
-  // 2. Egresos de módulos — en su fecha exacta de vencimiento si tiene, o el día 1 del mes
-  Object.entries(egresoModules).forEach(([modKey,mod])=>{
-    // Buscar subItems de todos los meses que vencen en esta fecha exacta
-    mod.items.forEach(mdata=>{
+  // 2. Egresos de módulos — solo en día 1 del mes
+  const diaNum=parseInt(fechaKey.split('-')[2]);
+  if(diaNum===1){
+    Object.entries(egresoModules).forEach(([modKey,mod])=>{
+      const mdata=mod.items.find(i=>i.key===mesKey);if(!mdata)return;
       mdata.subItems.forEach(s=>{
-        const esArr=modKey==='arrendamientos';
-        const montoArs=esArr
-          ?((+s.tn_soja||0)*getGrainPrice('soja',mdata.key).v+(+s.tn_maiz||0)*getGrainPrice('maiz',mdata.key).v)*getTcMay()
-          :(s.moneda==='usd'?(+s.monto||0)*getTcMin():(+s.monto||0));
-        if(montoArs<=0)return;
-        if(s.fecha_vto && s.fecha_vto===fechaKey){
-          // Tiene fecha exacta — aparece ese día
-          movs.push({id:'egr_'+modKey+'_'+s.id,tipo:'egreso_variable',concepto:s.concepto,banco:mod.label,monto_ars:montoArs,monto_usd:s.moneda==='usd'?(+s.monto||0):0,origen:'modulo'});
-        } else if(!s.fecha_vto && mdata.key===mesKey){
-          // Sin fecha exacta — aparece el día 1 del mes
-          const diaNum=parseInt(fechaKey.split('-')[2]);
-          if(diaNum===1){
-            movs.push({id:'egr_'+modKey+'_'+s.id,tipo:'egreso_variable',concepto:s.concepto,banco:mod.label,monto_ars:montoArs,monto_usd:s.moneda==='usd'?(+s.monto||0):0,origen:'modulo'});
-          }
-        }
+        if(+s.monto>0)
+          movs.push({id:'egr_'+modKey+'_'+s.id,tipo:'egreso_variable',concepto:s.concepto,banco:mod.label,monto_ars:+s.monto,monto_usd:0,origen:'modulo'});
       });
     });
-  });
+  }
   // 3. Ventas reales confirmadas en este día
   ventasReales.filter(v=>v.fecha===fechaKey).forEach(v=>{
     const px=getGrainPrice(v.grano,mesKey).v;
@@ -1504,12 +1471,26 @@ function getCajaMovsDia(fechaKey){
   cajaMovimientos.filter(m=>m.fecha===fechaKey).forEach(m=>{
     movs.push({id:'man_'+m.id,tipo:m.tipo,concepto:m.concepto,banco:'',monto_ars:+m.monto_ars||0,monto_usd:+m.monto_usd||0,origen:'manual',obs:m.obs,rawId:m.id});
   });
+  // 5. Movimientos bancarios importados desde Excel
+  movBancarios.filter(m=>m.fecha===fechaKey).forEach(m=>{
+    const banco=saldoBancos[m.bancoId]?saldoBancos[m.bancoId].nombre:m.bancoId;
+    const tipo=m.monto>=0?'ingreso':'egreso_variable';
+    movs.push({id:'mb_'+m.id,tipo,concepto:m.concepto,banco,monto_ars:Math.abs(+m.monto||0),monto_usd:0,origen:'banco_imp',rawId:m.id,bancoId:m.bancoId});
+  });
   return movs;
 }
 
 function calcCajaFlow(){
   const dias=getCajaDias();
-  let saldoArs=cajaInicial.ars||0,saldoUsd=cajaInicial.usd||0;
+  const hoyStr=new Date().toISOString().split('T')[0];
+  // Saldo inicial = suma de saldos base de todos los bancos
+  const bancosIds=Object.keys(saldoBancos);
+  let saldoArs=bancosIds.reduce((acc,bid)=>{
+    const b=saldoBancos[bid];
+    const extra=movBancarios.filter(m=>m.bancoId===bid&&m.fecha>=(b.fechaSaldo||hoyStr)&&m.fecha<=hoyStr).reduce((s,m)=>s+(+m.monto||0),0);
+    return acc+(+b.saldoArs||0)+extra;
+  },0)||cajaInicial.ars||0;
+  let saldoUsd=cajaInicial.usd||0;
   return dias.map(dia=>{
     const movs=getCajaMovsDia(dia.fecha);
     let deltaArs=0,deltaUsd=0;
@@ -1535,88 +1516,153 @@ function renderCaja(){
   const diasVto=cf.filter(d=>d.hayVtos).length;
   const cuotasSinFecha=[...LOANS,...extraLoans].filter(l=>{const e=loanEdits[l.id]||l;return ((e.monto_ars||0)+(e.monto_usd||0))>0&&!cuotaFechas[l.id];});
 
-  const saldoPanel=`
-  <div class="caja-saldo-panel">
-    <div class="saldo-card">
-      <h5>SALDO INICIAL CAJA ARS (HOY)</h5>
-      <input type="number" step="1000" value="${cajaInicial.ars||0}" ${isReadOnly?'disabled':''} onchange="setCajaInicial('ars',this.value)" placeholder="$ 0">
-    </div>
-    <div class="saldo-card">
-      <h5>SALDO INICIAL CAJA USD (HOY)</h5>
-      <input type="number" step="100" value="${cajaInicial.usd||0}" ${isReadOnly?'disabled':''} onchange="setCajaInicial('usd',this.value)" placeholder="U$S 0">
-    </div>
-    <div class="saldo-card" style="flex:2;min-width:260px;">
-      <h5>RESUMEN 30 DÍAS</h5>
-      <div style="display:flex;gap:14px;font-family:'IBM Plex Mono',monospace;font-size:11px;margin-top:5px;flex-wrap:wrap;">
-        <span>Saldo ARS final: <b style="color:${last.saldoArs>=0?'var(--green)':'var(--red)'}">$ ${fmt(last.saldoArs)}</b></span>
-        <span>Saldo USD final: <b style="color:${last.saldoUsd>=0?'var(--green)':'var(--red)'}">U$S ${fmt(last.saldoUsd,2)}</b></span>
-        <span>Días con vto: <b>${diasVto}</b></span>
-        <span>Días saldo negativo: <b style="color:${diasDef>0?'var(--red)':'var(--green)'}">${diasDef}</b></span>
-      </div>
-    </div>
-  </div>`;
+  // Saldo total = suma de todos los bancos (saldo base + movimientos bancarios acumulados hasta hoy)
+  const hoyStr=new Date().toISOString().split('T')[0];
+  const bancosIds=Object.keys(saldoBancos);
+  const saldoTotalArs=bancosIds.reduce((acc,bid)=>{
+    const b=saldoBancos[bid];
+    // sumar movimientos bancarios desde fechaSaldo hasta hoy
+    const extra=movBancarios.filter(m=>m.bancoId===bid&&m.fecha>=(b.fechaSaldo||hoyStr)&&m.fecha<=hoyStr).reduce((s,m)=>s+(+m.monto||0),0);
+    return acc+(+b.saldoArs||0)+extra;
+  },0);
+
+  const bancosCardsHtml=bancosIds.length===0
+    ?'<div style="font-family:IBM Plex Mono,monospace;font-size:11px;color:var(--text3);padding:6px 0;">Todavía no cargaste bancos. Agregá uno abajo.</div>'
+    :bancosIds.map(bid=>{
+      const b=saldoBancos[bid];
+      const extraMov=movBancarios.filter(m=>m.bancoId===bid&&m.fecha>=(b.fechaSaldo||hoyStr)&&m.fecha<=hoyStr).reduce((s,m)=>s+(+m.monto||0),0);
+      const saldoActual=(+b.saldoArs||0)+extraMov;
+      const neg=saldoActual<0;
+      const readonlyAttr=isReadOnly?'disabled':'';
+      return '<div class="banco-card">'+
+        (isReadOnly?'':'<button class="banco-del-btn" onclick="delBanco(\''+bid+'\')" title="Eliminar banco">✕</button>')+
+        '<div class="banco-card-nombre">'+
+          '<span style="width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block;flex-shrink:0;"></span>'+
+          b.nombre+
+        '</div>'+
+        '<div class="banco-card-saldo'+(neg?' neg':'')+'">$ '+fmt(saldoActual)+'</div>'+
+        '<div class="banco-card-fecha">Saldo base: $ '+fmt(+b.saldoArs||0)+' al '+(b.fechaSaldo||'—')+'</div>'+
+        (isReadOnly?'':'<input class="banco-card-input" type="number" step="1000" value="'+(b.saldoArs||0)+'" placeholder="$ saldo base" onchange="setBancoSaldo(\''+bid+'\',this.value)" title="Saldo base de este banco">')+
+      '</div>';
+    }).join('');
+
+  const saldoPanel=
+    '<div class="bancos-panel">'+
+      '<div class="bancos-panel-title">'+
+        '<span>💰 SALDOS POR BANCO</span>'+
+        '<span class="banco-saldo-total">TOTAL ARS: <b style="color:'+(saldoTotalArs>=0?'var(--green)':'var(--red)')+'">$ '+fmt(saldoTotalArs)+'</b></span>'+
+      '</div>'+
+      '<div class="bancos-grid">'+bancosCardsHtml+'</div>'+
+      (isReadOnly?'':'<div class="bancos-actions">'+
+        '<div class="banco-add-form">'+
+          '<input id="nuevoBancoNombre" type="text" placeholder="Nombre del banco (ej: Banco Nación)" style="flex:1;min-width:180px;">'+
+          '<input id="nuevoBancoSaldo" type="number" step="1000" placeholder="Saldo inicial $" style="width:140px;">'+
+          '<button class="caja-add-btn" onclick="addBanco()">+ Banco</button>'+
+        '</div>'+
+        '<button class="banco-import-btn" onclick="openImportModal()">📥 Importar Excel banco</button>'+
+      '</div>')+
+    '</div>'+
+    '<div class="caja-saldo-panel">'+
+      '<div class="saldo-card" style="flex:2;min-width:260px;">'+
+        '<h5>RESUMEN 30 DÍAS</h5>'+
+        '<div style="display:flex;gap:14px;font-family:IBM Plex Mono,monospace;font-size:11px;margin-top:5px;flex-wrap:wrap;">'+
+          '<span>Saldo ARS final: <b style="color:'+(last.saldoArs>=0?'var(--green)':'var(--red)')+'">$ '+fmt(last.saldoArs)+'</b></span>'+
+          '<span>Saldo USD final: <b style="color:'+(last.saldoUsd>=0?'var(--green)':'var(--red)')+'">U$S '+fmt(last.saldoUsd,2)+'</b></span>'+
+          '<span>Días con vto: <b>'+diasVto+'</b></span>'+
+          '<span>Días saldo negativo: <b style="color:'+(diasDef>0?'var(--red)':'var(--green)')+'">'+diasDef+'</b></span>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
 
   const avisoFechas=cuotasSinFecha.length>0?`
   <div style="background:var(--amber-bg);border:0.5px solid #D4A853;border-radius:6px;padding:8px 14px;font-size:11px;color:var(--amber);font-family:'IBM Plex Mono',monospace;margin-bottom:12px;display:flex;align-items:flex-start;gap:8px;">
     <span>⚠</span><div><b>${cuotasSinFecha.length}</b> cuota(s) sin fecha exacta — asignalas en la pestaña <b>CUOTAS CREDITICIAS</b> para que aparezcan aquí en el día correcto.</div>
   </div>`:'' ;
 
-  const renderMovGroup=(titulo,lista,colorClass)=>{
+  const renderMovGroup=(titulo,lista,colorClass,fecha)=>{
     if(!lista.length)return'';
-    const rowsHtml=lista.map(m=>{
-      const pagoKey='pago_'+m.id;
-      const pagado=!!(cajaMovimientos.find(c=>c.id===pagoKey));
-      const pagoStyle=pagado?'opacity:0.5;text-decoration:line-through;':'';
-      const labelColor=pagado?'var(--green)':'var(--text3)';
-      const checkHtml=isReadOnly?'':
-        '<label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;color:'+labelColor+';font-family:IBM Plex Mono,monospace;" title="Marcar como pagado">'
-        +'<input type="checkbox" '+(pagado?'checked':'')
-        +' onchange="togglePagoCaja(\''+m.id+'\',this.checked)" style="width:14px;height:14px;cursor:pointer;accent-color:var(--green);">'
-        +(pagado?'<span style="color:var(--green);">&#x2713; pago</span>':'<span>pagar</span>')
-        +'</label>';
-      const tag=m.origen==='cuota'?m.banco:m.origen==='venta_real'?'GRANO':'MANUAL';
-      const obsHtml=m.obs?'<span style="color:var(--text3);font-size:10px;">('+m.obs+')</span>':'';
-      const signo=colorClass==='ingreso'?'+ ':'- ';
-      const pn=colorClass==='ingreso'?'pos':'neg';
-      const arsHtml=m.monto_ars?'<div class="caja-mov-monto '+pn+'">'+signo+'$ '+fmt(Math.abs(m.monto_ars))+'</div>':'';
-      const usdHtml=m.monto_usd?'<div class="caja-mov-monto '+pn+'" style="font-size:10px;">'+signo+'U$S '+fmt(Math.abs(m.monto_usd),2)+'</div>':'';
-      const delHtml=m.origen==='manual'&&!isReadOnly?'<button class="del-btn" onclick="delCajaMov(\''+m.rawId+'\')">&#x2715;</button>':'';
-      return '<div class="caja-mov-row" style="'+pagoStyle+'">'
-        +'<div class="caja-mov-concepto" style="display:flex;align-items:center;gap:8px;">'
-        +checkHtml
-        +'<span class="mov-tag '+colorClass+'">'+tag+'</span>'
-        +m.concepto+' '+obsHtml
-        +'</div>'
-        +'<div style="display:flex;align-items:center;gap:8px;">'
-        +'<div>'+arsHtml+usdHtml+'</div>'
-        +delHtml
-        +'</div></div>';
+    const rows=lista.map(m=>{
+      const esCuota=m.origen==='cuota';
+      const pagoKey=esCuota?(m.id+'_'+fecha):'';
+      const pagado=esCuota&&!!vencimientosPagados[pagoKey];
+      const pagoBtn=esCuota&&!isReadOnly
+        ?'<button class="caja-pagar-btn'+(pagado?' ya-pagado':'')+'" onclick="toggleVencimientoPagado(\''+pagoKey+'\')">'+(pagado?'↩ Desmarcar':'✅ Pagado')+'</button>'
+        :'';
+      const pagadoBadge=pagado?'<span class="caja-pagado-badge">✅ PAGADO</span>':'';
+      const tagLabel=esCuota?m.banco:(m.origen==='venta_real'?'GRANO':(m.origen==='banco_imp'?m.banco:'MANUAL'));
+      const obsHtml=m.obs?(' <span style="color:var(--text3);font-size:10px;">('+m.obs+')</span>'):'';
+      const montoArsHtml=m.monto_ars?('<div class="caja-mov-monto '+(colorClass==='ingreso'?'pos':'neg')+'">'+(colorClass==='ingreso'?'+ ':'- ')+'$ '+fmt(Math.abs(m.monto_ars))+'</div>'):'';
+      const montoUsdHtml=m.monto_usd?('<div class="caja-mov-monto '+(colorClass==='ingreso'?'pos':'neg')+'" style="font-size:10px;">'+(colorClass==='ingreso'?'+ ':'- ')+'U$S '+fmt(Math.abs(m.monto_usd),2)+'</div>'):'';
+      const delBtn=(m.origen==='manual'||m.origen==='banco_imp')&&!isReadOnly?('<button class="del-btn" onclick="del'+(m.origen==='manual'?'CajaMov':'MovBancario')+'(\''+m.rawId+'\')">✕</button>'):'';
+      return '<div class="caja-mov-row'+(pagado?' pagado':'')+'">'+
+        '<div class="caja-mov-concepto">'+
+          '<span class="mov-tag '+colorClass+'">'+tagLabel+'</span>'+
+          m.concepto+obsHtml+pagadoBadge+
+        '</div>'+
+        '<div style="display:flex;align-items:center;gap:8px;">'+
+          '<div>'+montoArsHtml+montoUsdHtml+'</div>'+
+          pagoBtn+delBtn+
+        '</div>'+
+      '</div>';
     }).join('');
-    return '<div class="caja-mov-group"><div class="caja-mov-group-title">'+titulo+'</div>'+rowsHtml+'</div>';
+    return '<div class="caja-mov-group"><div class="caja-mov-group-title">'+titulo+'</div>'+rows+'</div>';
   };
 
-  const diasHtml=cf.map((dia,idx)=>{
+
+
+  const cfPasados=cf.filter(d=>d.esPasado);
+  const cfFuturos=cf.filter(d=>!d.esPasado);
+
+  const renderDia=(dia,idx)=>{
     const label=`${DN[dia.d.getDay()]} ${dia.d.getDate()} ${MES[dia.d.getMonth()]}`;
     const tieneMovs=dia.movs.length>0;
     const semaforo=dia.saldoArs<0?'rojo':dia.saldoArs<(cajaInicial.ars||0)*0.15?'warn':'ok';
-    const hCls=`caja-day-header${dia.esHoy?' hoy':''}${tieneMovs?' tiene-movs':''}${dia.saldoArs<0?' deficit-dia':''}`;
-    const bodyId=`cajabody_${idx}`;
-    const bodyOpen=dia.esHoy||(dia.hayVtos&&idx<7);
+    const bodyId=`cajabody_${dia.fecha}`;
+    const bodyOpen=dia.esHoy||(dia.hayVtos&&!dia.esPasado&&idx<7)||(dia.esPasado&&dia.hayVtos);
+
+    const movsEgresoFijo=dia.movs.filter(m=>m.origen==='cuota');
+    const movsEgresoVar=dia.movs.filter(m=>m.origen==='modulo'||(m.origen==='manual'&&m.tipo==='egreso_variable'));
+    const movsIngreso=dia.movs.filter(m=>m.tipo==='ingreso'&&m.origen!=='banco_imp');
+    const movsBancoIng=dia.movs.filter(m=>m.origen==='banco_imp'&&m.tipo==='ingreso');
+    const movsBancoEgr=dia.movs.filter(m=>m.origen==='banco_imp'&&m.tipo!=='ingreso');
+
+    // Calcular estado de pagos del día
+    const totalVtos=movsEgresoFijo.length;
+    const pagadosHoy=movsEgresoFijo.filter(m=>!!vencimientosPagados[`${m.id}_${dia.fecha}`]).length;
+    const todosPagados=totalVtos>0&&pagadosHoy===totalVtos;
+
+    // Badge de vencimiento considerando pagados — sin backticks anidados
+    let vtoBadge='';
+    if(dia.hayVtos){
+      if(todosPagados){
+        vtoBadge='<span class="caja-badge vto" style="background:var(--green-bg);color:var(--green);">✅ TODO PAGADO</span>';
+      } else if(pagadosHoy>0){
+        const restantes=totalVtos-pagadosHoy;
+        const badgePagados='<span class="caja-badge vto" style="background:var(--green-bg);color:var(--green);">✅ '+pagadosHoy+'/'+totalVtos+'</span>';
+        const badgePendientes=dia.esPasado
+          ?'<span class="caja-badge vto vencido-badge">⚠ '+restantes+' VENCIDO'+(restantes>1?'S':'')+'</span>'
+          :'<span class="caja-badge vto">VENCIMIENTO</span>';
+        vtoBadge=badgePagados+badgePendientes;
+      } else {
+        vtoBadge=dia.esPasado
+          ?'<span class="caja-badge vto vencido-badge">⚠ VENCIDO SIN PAGAR</span>'
+          :'<span class="caja-badge vto">VENCIMIENTO</span>';
+      }
+    }
+
     const badges=[
-      dia.hayVtos?`<span class="caja-badge vto">VENCIMIENTO</span>`:'',
+      vtoBadge,
       dia.hayIngresos?`<span class="caja-badge ingreso">INGRESO</span>`:'',
       dia.movs.some(m=>m.origen==='manual')?`<span class="caja-badge gasto">MANUAL</span>`:'',
     ].filter(Boolean).join('');
 
-    const movsEgresoFijo=dia.movs.filter(m=>m.origen==='cuota');
-    const movsEgresoVar=dia.movs.filter(m=>m.origen==='modulo'||(m.origen==='manual'&&m.tipo==='egreso_variable'));
-    const movsIngreso=dia.movs.filter(m=>m.tipo==='ingreso');
+    const hCls=`caja-day-header${dia.esHoy?' hoy':''}${tieneMovs?' tiene-movs':''}${dia.saldoArs<0?' deficit-dia':''}${dia.esPasado?' pasado':''}${todosPagados?' all-paid':''}`;
 
-    const alertaVenta=dia.necesitaVenta?`
-    <div class="caja-necesita-venta">
-      ⚠ Saldo negativo al cierre — considerá realizar una venta de granos.
-      ${!isReadOnly?`<button class="confirm-venta-btn" style="margin-left:auto;" onclick="openModalVenta(null)">+ Registrar venta</button>`:''}
-    </div>`:'';
+    const alertaVenta=dia.necesitaVenta&&!dia.esPasado
+      ?'<div class="caja-necesita-venta">⚠ Saldo negativo al cierre — considerá realizar una venta de granos.'+(
+        !isReadOnly?'<button class="confirm-venta-btn" style="margin-left:auto;" onclick="openModalVenta(null)">+ Registrar venta</button>':''
+       )+'</div>'
+      :'';
 
     const formMov=isReadOnly?'':`
     <div class="caja-add-mov" style="margin-top:10px;padding-top:8px;border-top:0.5px solid var(--border);">
@@ -1647,21 +1693,34 @@ function renderCaja(){
         </div>
       </div>
       <div class="caja-day-body${bodyOpen?' open':''}" id="${bodyId}">
-        ${renderMovGroup('VENCIMIENTOS CREDITICIOS',movsEgresoFijo,'banco')}
-        ${renderMovGroup('EGRESOS OPERATIVOS',movsEgresoVar,'egreso')}
-        ${renderMovGroup('INGRESOS',movsIngreso,'ingreso')}
+        ${renderMovGroup('VENCIMIENTOS CREDITICIOS',movsEgresoFijo,'banco',dia.fecha)}
+        ${renderMovGroup('EGRESOS OPERATIVOS',movsEgresoVar,'egreso',dia.fecha)}
+        ${renderMovGroup('MOVIMIENTOS BANCARIOS — EGRESOS',movsBancoEgr,'egreso',dia.fecha)}
+        ${renderMovGroup('INGRESOS',movsIngreso,'ingreso',dia.fecha)}
+        ${renderMovGroup('MOVIMIENTOS BANCARIOS — INGRESOS',movsBancoIng,'ingreso',dia.fecha)}
         ${alertaVenta}
         ${formMov}
       </div>
     </div>`;
-  }).join('');
+  };
+
+  const vtosPendientes=cfPasados.filter(d=>{
+    if(!d.hayVtos)return false;
+    const cuotas=d.movs.filter(m=>m.origen==='cuota');
+    const pagados=cuotas.filter(m=>!!vencimientosPagados[m.id+'_'+d.fecha]);
+    return pagados.length<cuotas.length;
+  }).length;
+  const pasadosHtml=cfPasados.length===0?'':
+    '<div class="caja-pasados-section">'+cfPasados.map((d,i)=>renderDia(d,i)).join('')+'</div>';
+
+  const futurosHtml=cfFuturos.map((d,i)=>renderDia(d,i)).join('');
 
   return`
   <div class="caja-header">
-    <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text2);">FLUJO DE CAJA — PRÓXIMOS 30 DÍAS</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text2);">FLUJO DE CAJA</div>
     <div style="font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">TC min: $ ${fmt(getTcMin(),2)} · TC may: $ ${fmt(getTcMay(),2)}</div>
   </div>
-  ${saldoPanel}${avisoFechas}${diasHtml}`;
+  ${saldoPanel}${avisoFechas}${pasadosHtml}${futurosHtml}`;
 }
 
 function setCajaInicial(moneda,val){
@@ -1669,6 +1728,265 @@ function setCajaInicial(moneda,val){
   cajaInicial[moneda]=+val||0;
   scheduleFirestoreSave();
   if(currentTab==='caja')renderTabContent();
+}
+
+// ---- GESTIÓN DE BANCOS ----
+function addBanco(){
+  if(isReadOnly)return;
+  const nombre=document.getElementById('nuevoBancoNombre').value.trim();
+  const saldo=+document.getElementById('nuevoBancoSaldo').value||0;
+  if(!nombre){alert('Ingresá el nombre del banco.');return;}
+  const id='banco_'+Date.now();
+  const hoy=new Date().toISOString().split('T')[0];
+  saldoBancos[id]={nombre,saldoArs:saldo,saldoUsd:0,fechaSaldo:hoy};
+  scheduleFirestoreSave();
+  renderTabContent();
+}
+
+function delBanco(id){
+  if(isReadOnly)return;
+  if(!confirm('¿Eliminar este banco? Se borrarán también sus movimientos importados.'))return;
+  delete saldoBancos[id];
+  movBancarios=movBancarios.filter(m=>m.bancoId!==id);
+  scheduleFirestoreSave();
+  renderTabContent();
+}
+
+function setBancoSaldo(id,val){
+  if(isReadOnly)return;
+  if(!saldoBancos[id])return;
+  saldoBancos[id].saldoArs=+val||0;
+  saldoBancos[id].fechaSaldo=new Date().toISOString().split('T')[0];
+  scheduleFirestoreSave();
+  renderTabContent();
+}
+
+// ---- IMPORTACIÓN DE EXCEL ----
+let _importParsed=null; // movimientos parseados pendientes de confirmar
+
+function openImportModal(){
+  if(isReadOnly)return;
+  const bancosIds=Object.keys(saldoBancos);
+  if(bancosIds.length===0){alert('Primero agregá al menos un banco.');return;}
+  const opts=bancosIds.map(id=>'<option value="'+id+'">'+saldoBancos[id].nombre+'</option>').join('');
+  const modal=document.createElement('div');
+  modal.className='import-modal-overlay';
+  modal.id='importModalOverlay';
+  modal.innerHTML=
+    '<div class="import-modal">'+
+      '<h3>📥 IMPORTAR MOVIMIENTOS DE BANCO</h3>'+
+      '<label style="font-family:IBM Plex Mono,monospace;font-size:10px;color:var(--text3);display:block;margin-bottom:4px;">BANCO DESTINO</label>'+
+      '<select class="import-banco-sel" id="importBancoSel">'+opts+'</select>'+
+      '<div class="import-drop-zone" id="importDropZone" onclick="document.getElementById(\'importFileInput\').click()">'+
+        '📂 Hacé clic o arrastrá el Excel del banco aquí<br>'+
+        '<span style="font-size:10px;opacity:.7;">.xls / .xlsx — Credicoop, Macro empresa, Macro persona, Nación</span>'+
+      '</div>'+
+      '<input type="file" id="importFileInput" accept=".xls,.xlsx" style="display:none" onchange="handleImportFile(this.files[0])">'+
+      '<div id="importPreviewArea"></div>'+
+      '<div class="import-modal-btns">'+
+        '<button class="import-cancel-btn" onclick="closeImportModal()">Cancelar</button>'+
+        '<button class="import-confirm-btn" id="importConfirmBtn" disabled onclick="confirmImport()">Importar movimientos</button>'+
+      '</div>'+
+    '</div>';
+  // drag & drop
+  document.body.appendChild(modal);
+  const dz=document.getElementById('importDropZone');
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over');});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
+  dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');handleImportFile(e.dataTransfer.files[0]);});
+}
+
+function closeImportModal(){
+  const el=document.getElementById('importModalOverlay');
+  if(el)el.remove();
+  _importParsed=null;
+}
+
+function handleImportFile(file){
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      // Necesita SheetJS (xlsx) — lo cargamos dinámicamente si no está
+      if(!window.XLSX){
+        const s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        s.onload=()=>parseXLS(e.target.result,file.name);
+        document.head.appendChild(s);
+      } else {
+        parseXLS(e.target.result,file.name);
+      }
+    }catch(err){
+      document.getElementById('importPreviewArea').innerHTML='<div style="color:var(--red);font-family:IBM Plex Mono,monospace;font-size:11px;">Error al leer archivo: '+err.message+'</div>';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseXLS(buffer,filename){
+  const wb=XLSX.read(buffer,{type:'array'});
+  const sheetName=wb.SheetNames[0];
+  const ws=wb.Sheets[sheetName];
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+  
+  let movs=[];
+  // Detectar formato por estructura
+  const fname=filename.toLowerCase();
+  
+  // --- CREDICOOP: Fecha | Concepto | N° comprobante | Monto | Saldo | Cód ---
+  if(rows[0]&&String(rows[0][0]).toLowerCase().includes('fecha')&&String(rows[0][3]).toLowerCase().includes('monto')){
+    for(let i=1;i<rows.length;i++){
+      const r=rows[i];
+      const rawFecha=String(r[0]||'').trim();
+      const monto=parseFloat(String(r[3]).replace(',','.'));
+      const saldo=parseFloat(String(r[4]).replace(',','.'));
+      if(!rawFecha||isNaN(monto))continue;
+      const fecha=parseFechaArg(rawFecha);
+      if(!fecha)continue;
+      movs.push({fecha,concepto:String(r[1]||'').trim(),nroRef:String(r[2]||'').trim(),monto,saldo});
+    }
+  }
+  // --- MACRO EMPRESA: encabezado en fila 7, fecha como número Excel ---
+  else if(rows[7]&&String(rows[7][0]).toLowerCase().includes('fecha')){
+    for(let i=8;i<rows.length;i++){
+      const r=rows[i];
+      const rawFecha=r[0];
+      if(!rawFecha)continue;
+      let fecha;
+      if(typeof rawFecha==='number'){ // número Excel serial
+        const d=new Date(Math.round((rawFecha-25569)*86400*1000));
+        fecha=d.toISOString().split('T')[0];
+      } else {
+        fecha=parseFechaArg(String(rawFecha).trim());
+      }
+      if(!fecha)continue;
+      const monto=parseFloat(String(r[6]||'0').replace(',','.').replace(/[^0-9.-]/g,''));
+      const saldo=parseFloat(String(r[10]||'0').replace(',','.').replace(/[^0-9.-]/g,''));
+      const concepto=String(r[5]||r[4]||'').trim();
+      if(!concepto||isNaN(monto))continue;
+      movs.push({fecha,concepto,nroRef:String(r[3]||'').trim(),monto,saldo});
+    }
+  }
+  // --- MACRO PERSONA: encabezado en fila 2, Fecha | Nro.Trans | Descripción | Importe | Saldo ---
+  else if(rows[2]&&String(rows[2][2]).toLowerCase().includes('descripci')){
+    for(let i=3;i<rows.length;i++){
+      const r=rows[i];
+      const rawFecha=r[0];
+      if(!rawFecha)continue;
+      let fecha;
+      if(typeof rawFecha==='number'){
+        const d=new Date(Math.round((rawFecha-25569)*86400*1000));
+        fecha=d.toISOString().split('T')[0];
+      } else {
+        fecha=parseFechaArg(String(rawFecha).trim());
+      }
+      if(!fecha)continue;
+      const monto=parseFloat(String(r[3]||'0').replace(',','.').replace(/[^0-9.-]/g,''));
+      const saldo=parseFloat(String(r[4]||'0').replace(',','.').replace(/[^0-9.-]/g,''));
+      const concepto=String(r[2]||'').trim();
+      if(!concepto||isNaN(monto))continue;
+      movs.push({fecha,concepto,nroRef:String(r[1]||'').trim(),monto,saldo});
+    }
+  }
+  // --- FALLBACK: buscar columnas automáticamente ---
+  else {
+    let headerRow=-1;
+    for(let i=0;i<Math.min(15,rows.length);i++){
+      const joined=rows[i].join(' ').toLowerCase();
+      if((joined.includes('fecha')||joined.includes('date'))&&(joined.includes('monto')||joined.includes('importe')||joined.includes('haber')||joined.includes('debe'))){
+        headerRow=i;break;
+      }
+    }
+    if(headerRow>=0){
+      const hdr=rows[headerRow].map(h=>String(h).toLowerCase());
+      const ci={
+        fecha:hdr.findIndex(h=>h.includes('fecha')||h.includes('date')),
+        monto:hdr.findIndex(h=>h.includes('importe')||h.includes('monto')),
+        concepto:hdr.findIndex(h=>h.includes('concepto')||h.includes('descripci')||h.includes('causal')),
+        saldo:hdr.findIndex(h=>h.includes('saldo')),
+        ref:hdr.findIndex(h=>h.includes('ref')||h.includes('comprobante')||h.includes('transacci')),
+      };
+      for(let i=headerRow+1;i<rows.length;i++){
+        const r=rows[i];
+        if(!r[ci.fecha])continue;
+        let fecha;
+        const rawF=r[ci.fecha];
+        if(typeof rawF==='number'){const d=new Date(Math.round((rawF-25569)*86400*1000));fecha=d.toISOString().split('T')[0];}
+        else fecha=parseFechaArg(String(rawF).trim());
+        if(!fecha)continue;
+        const monto=parseFloat(String(r[ci.monto]||'0').replace(',','.').replace(/[^0-9.-]/g,''));
+        if(isNaN(monto))continue;
+        movs.push({fecha,concepto:ci.concepto>=0?String(r[ci.concepto]||'').trim():'',nroRef:ci.ref>=0?String(r[ci.ref]||'').trim():'',monto,saldo:ci.saldo>=0?parseFloat(String(r[ci.saldo]||'0').replace(',','.').replace(/[^0-9.-]/g,''))||0:0});
+      }
+    }
+  }
+
+  _importParsed=movs;
+  renderImportPreview(movs,filename);
+}
+
+function parseFechaArg(str){
+  // DD/MM/YYYY o YYYY-MM-DD
+  if(!str)return null;
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(str)){
+    const[d,m,y]=str.split('/');
+    return y+'-'+m.padStart(2,'0')+'-'+d.padStart(2,'0');
+  }
+  if(/^\d{4}-\d{2}-\d{2}$/.test(str))return str;
+  return null;
+}
+
+function renderImportPreview(movs,filename){
+  const area=document.getElementById('importPreviewArea');
+  if(!area)return;
+  if(movs.length===0){
+    area.innerHTML='<div style="color:var(--amber);font-family:IBM Plex Mono,monospace;font-size:11px;padding:8px;">No se encontraron movimientos en este archivo. Verificá el formato.</div>';
+    return;
+  }
+  const totalPos=movs.filter(m=>m.monto>0).reduce((s,m)=>s+m.monto,0);
+  const totalNeg=movs.filter(m=>m.monto<0).reduce((s,m)=>s+m.monto,0);
+  const rows=movs.slice(0,50).map(m=>{
+    const cls=m.monto>0?'import-row-pos':'import-row-neg';
+    return '<tr class="'+cls+'"><td>'+m.fecha+'</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+m.concepto+'">'+m.concepto.substring(0,35)+(m.concepto.length>35?'…':'')+'</td><td style="text-align:right;">'+(m.monto>0?'+':'')+fmt(m.monto)+'</td><td style="text-align:right;">'+fmt(m.saldo)+'</td></tr>';
+  }).join('');
+  area.innerHTML=
+    '<div class="import-preview">'+
+      '<div style="margin-bottom:6px;color:var(--text2);"><b>'+movs.length+' movimientos</b> detectados en <i>'+filename+'</i>'+(movs.length>50?' (mostrando primeros 50)':'')+'</div>'+
+      '<div style="display:flex;gap:14px;margin-bottom:8px;font-size:10px;">'+
+        '<span style="color:var(--green);">Ingresos: +$ '+fmt(totalPos)+'</span>'+
+        '<span style="color:var(--red);">Egresos: $ '+fmt(totalNeg)+'</span>'+
+      '</div>'+
+      '<table><tr><th>Fecha</th><th>Concepto</th><th style="text-align:right;">Monto</th><th style="text-align:right;">Saldo</th></tr>'+rows+'</table>'+
+    '</div>';
+  const btn=document.getElementById('importConfirmBtn');
+  if(btn)btn.disabled=false;
+}
+
+function confirmImport(){
+  if(!_importParsed||_importParsed.length===0)return;
+  const bancoId=document.getElementById('importBancoSel').value;
+  if(!bancoId||!saldoBancos[bancoId])return;
+  // Agregar movimientos (evitar duplicados por nroRef+fecha+bancoId)
+  const existKeys=new Set(movBancarios.filter(m=>m.bancoId===bancoId).map(m=>m.bancoId+'|'+m.fecha+'|'+m.nroRef+'|'+m.monto));
+  let added=0;
+  _importParsed.forEach(m=>{
+    const k=bancoId+'|'+m.fecha+'|'+m.nroRef+'|'+m.monto;
+    if(!existKeys.has(k)){
+      movBancarios.push({id:'mb'+Date.now()+Math.random().toString(36).slice(2,6),bancoId,fecha:m.fecha,concepto:m.concepto,monto:m.monto,saldo:m.saldo,nroRef:m.nroRef});
+      existKeys.add(k);
+      added++;
+    }
+  });
+  // Actualizar saldo base del banco con el último saldo del extracto
+  const lastMov=_importParsed.reduce((a,b)=>a.fecha>b.fecha?a:b,_importParsed[0]);
+  if(lastMov&&lastMov.saldo!==undefined){
+    saldoBancos[bancoId].saldoArs=lastMov.saldo;
+    saldoBancos[bancoId].fechaSaldo=lastMov.fecha;
+  }
+  scheduleFirestoreSave();
+  closeImportModal();
+  renderTabContent();
+  alert('✅ '+added+' movimientos importados para '+saldoBancos[bancoId].nombre+'.');
 }
 
 function addCajaMov(fecha){
@@ -1692,30 +2010,26 @@ function delCajaMov(id){
   cajaMovimientos=cajaMovimientos.filter(m=>m.id!==id);
   scheduleFirestoreSave();renderTabContent();
 }
-function togglePagoCaja(movId,checked){
+
+function delMovBancario(id){
   if(isReadOnly)return;
-  const pagoKey='pago_'+movId;
-  if(checked){
-    // Registrar el pago si no existe
-    if(!cajaMovimientos.find(c=>c.id===pagoKey)){
-      cajaMovimientos.push({
-        id:pagoKey,
-        tipo:'pago_confirmado',
-        concepto:'Pago confirmado',
-        movRef:movId,
-        fecha:new Date().toISOString().split('T')[0],
-        cargadoEn:new Date().toISOString(),
-        cargadoPor:window._currentUser?window._currentUser.email:''
-      });
-    }
-  } else {
-    cajaMovimientos=cajaMovimientos.filter(c=>c.id!==pagoKey);
+  if(!confirm('¿Eliminar este movimiento bancario importado?'))return;
+  movBancarios=movBancarios.filter(m=>m.id!==id);
+  scheduleFirestoreSave();renderTabContent();
+}
+
+function toggleVencimientoPagado(pagoKey){
+  if(isReadOnly)return;
+  if(vencimientosPagados[pagoKey]){
+    delete vencimientosPagados[pagoKey];
+  }else{
+    vencimientosPagados[pagoKey]={
+      pagadoEn:new Date().toISOString(),
+      pagadoPor:window._currentUser?window._currentUser.email:'anónimo'
+    };
   }
   scheduleFirestoreSave();
-  // Re-render sin perder el estado de apertura del día
-  const openIds=Array.from(document.querySelectorAll('.caja-day-body.open')).map(el=>el.id);
   renderTabContent();
-  openIds.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('open');});
 }
 
 // ============================================================
@@ -1831,13 +2145,7 @@ function editLoan(id,field,val){
   if(!loanEdits[id]){const l=LOANS.find(x=>x.id===id)||extraLoans.find(x=>x.id===id);if(l)loanEdits[id]={...l};}
   if(!loanEdits[id])loanEdits[id]={};
   loanEdits[id][field]=(field==='monto_ars'||field==='monto_usd')?(val===''?null:+val):val;
-  scheduleFirestoreSave();
-  // Solo re-render en campos numéricos; en texto solo guardar para no perder el foco
-  if(field==='monto_ars'||field==='monto_usd'){
-    const openIds=Array.from(document.querySelectorAll('.section-body.open')).map(el=>el.id);
-    renderTabContent();
-    openIds.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('open');});
-  }
+  scheduleFirestoreSave();renderAll();
 }
 function addLoan(){
   if(isReadOnly)return;
@@ -1853,61 +2161,18 @@ function delLoan(id){
 function editEgreso(modKey,key,si,field,val){
   if(isReadOnly)return;
   const mdata=egresoModules[modKey].items.find(i=>i.key===key);
-  if(!mdata||!mdata.subItems[si])return;
-  const numFields=['monto','tn_soja','tn_maiz'];
-  mdata.subItems[si][field]=numFields.includes(field)?(+val||0):val;
-
-  // FIX 3: si cambia la fecha de vencimiento y el mes no coincide con el mes actual,
-  // mover el subItem al mes correspondiente
-  if(field==='fecha_vto' && val){
-    const mesVto=val.substring(0,7);
-    if(mesVto !== key){
-      const itemMovido=mdata.subItems.splice(si,1)[0];
-      const mdataDest=egresoModules[modKey].items.find(i=>i.key===mesVto);
-      if(mdataDest){
-        mdataDest.subItems.push(itemMovido);
-      } else {
-        // mes fuera del rango, dejarlo donde está (restaurar)
-        mdata.subItems.splice(si,0,itemMovido);
-      }
-    }
-  }
-
-  scheduleFirestoreSave();
-  // No re-render en campos de texto para no perder el foco; solo en numéricos/fecha
-  if(field==='monto'||field==='tn_soja'||field==='tn_maiz'||field==='fecha_vto'||field==='moneda'){
-    const openIds=Array.from(document.querySelectorAll('.section-body.open')).map(el=>el.id);
-    renderTabContent();
-    openIds.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('open');});
-  }
+  if(mdata&&mdata.subItems[si])mdata.subItems[si][field]=field==='monto'?(+val||0):val;
+  scheduleFirestoreSave();renderAll();
 }
-function addEgreso(modKey,key,bodyId){
+function addEgreso(modKey,key){
   if(isReadOnly)return;
   const mdata=egresoModules[modKey].items.find(i=>i.key===key);
-  if(!mdata)return;
-  const esArr=modKey==='arrendamientos';
-  mdata.subItems.push(esArr
-    ?{id:'n'+Date.now(),concepto:'Nuevo arrendamiento',tn_soja:0,tn_maiz:0,fecha_vto:''}
-    :{id:'n'+Date.now(),concepto:'Nuevo ítem',monto:0,moneda:'ars',fecha_vto:''});
-  scheduleFirestoreSave();
-  // Re-render sin colapsar secciones abiertas
-  const openIds=Array.from(document.querySelectorAll('.section-body.open')).map(el=>el.id);
-  renderTabContent();
-  openIds.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('open');});
-  // Foco en el último campo de concepto del módulo
-  setTimeout(()=>{
-    const tbody=document.getElementById('eg-body-'+modKey);
-    if(tbody){const inputs=tbody.querySelectorAll('input[type=text]');if(inputs.length)inputs[inputs.length-1].focus();}
-  },50);
+  if(mdata){mdata.subItems.push({id:'n'+Date.now(),concepto:'Nuevo ítem',monto:0});scheduleFirestoreSave();renderTabContent();}
 }
 function delEgreso(modKey,key,si){
   if(isReadOnly)return;
   const mdata=egresoModules[modKey].items.find(i=>i.key===key);
-  if(mdata)mdata.subItems.splice(si,1);
-  scheduleFirestoreSave();
-  const openIds=Array.from(document.querySelectorAll('.section-body.open')).map(el=>el.id);
-  renderTabContent();
-  openIds.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('open');});
+  if(mdata)mdata.subItems.splice(si,1);scheduleFirestoreSave();renderAll();
 }
 function exportCSV(){
   const flow=calcFlow();
