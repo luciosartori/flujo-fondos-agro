@@ -107,7 +107,245 @@ onAuthStateChanged(auth, user => {
 [data-theme="dark"] .sidebar,
 [data-theme="dark"] .topbar { background: var(--bg2); }
 [data-theme="dark"] .login-form-side { background: var(--bg2); }
-[data-theme="dark"] input, [data-theme="dark"] select, [data-theme="dark"] textarea { background: var(--bg3) !important; color: var(--text) !important; border-color: var(--border) !important; }
+
+/* Dark mode — all interactive elements */
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background: var(--bg3) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+/* Dark mode — JS-generated cards and sections */
+[data-theme="dark"] .section,
+[data-theme="dark"] .section-header,
+[data-theme="dark"] .card,
+[data-theme="dark"] .metric,
+[data-theme="dark"] .stock-card,
+[data-theme="dark"] .stock-tile,
+[data-theme="dark"] .status-tile,
+[data-theme="dark"] .kpi-card,
+[data-theme="dark"] .saldo-card,
+[data-theme="dark"] .caja-day,
+[data-theme="dark"] .bancos-panel,
+[data-theme="dark"] .banco-card,
+[data-theme="dark"] .precios-panel,
+[data-theme="dark"] .precios-section,
+[data-theme="dark"] .pc-section,
+[data-theme="dark"] .precio-tile,
+[data-theme="dark"] .pc-card,
+[data-theme="dark"] .flow-table-wrap,
+[data-theme="dark"] .modal-box,
+[data-theme="dark"] .login-edit-box,
+[data-theme="dark"] .import-modal,
+[data-theme="dark"] .sidebar-user,
+[data-theme="dark"] .tc-pill,
+[data-theme="dark"] .ym-card,
+[data-theme="dark"] .ik {
+  background: var(--bg2) !important;
+  border-color: var(--border) !important;
+}
+
+/* Dark mode — section bodies and table backgrounds */
+[data-theme="dark"] .section-body,
+[data-theme="dark"] .caja-day-body,
+[data-theme="dark"] .card-body {
+  background: var(--bg) !important;
+}
+
+/* Dark mode — table headers */
+[data-theme="dark"] .sub-table th,
+[data-theme="dark"] .data-table th,
+[data-theme="dark"] .flow-table th,
+[data-theme="dark"] .import-preview th {
+  background: var(--bg3) !important;
+  color: var(--text3) !important;
+}
+
+/* Dark mode — table rows hover */
+[data-theme="dark"] .sub-table tr:hover td,
+[data-theme="dark"] .data-table tr:hover td,
+[data-theme="dark"] .flow-table tr:hover td {
+  background: var(--bg3) !important;
+}
+[data-theme="dark"] .sub-table tr.row-subtotal td,
+[data-theme="dark"] .flow-table tr.subtotal td {
+  background: var(--bg3) !important;
+}
+[data-theme="dark"] .sub-table tr.row-total td,
+[data-theme="dark"] .flow-table tr.grandtotal td {
+  background: var(--bg4) !important;
+}
+
+/* Dark mode — caja day header */
+[data-theme="dark"] .caja-day-header {
+  background: var(--bg2) !important;
+}
+[data-theme="dark"] .caja-day-header:hover {
+  background: var(--bg3) !important;
+}
+[data-theme="dark"] .caja-day-header.hoy {
+  background: linear-gradient(90deg, rgba(63,185,80,.08), var(--bg2)) !important;
+}
+
+/* Dark mode — section header hover */
+[data-theme="dark"] .section-header:hover,
+[data-theme="dark"] .card-header:hover {
+  background: var(--bg3) !important;
+}
+
+/* Dark mode — inline style overrides for JS-generated content */
+[data-theme="dark"] [style*="background:var(--bg2)"] { background: var(--bg2) !important; }
+[data-theme="dark"] [style*="background:var(--bg3)"] { background: var(--bg3) !important; }
+
+/* Dark mode — banco card inputs */
+[data-theme="dark"] .banco-card-input {
+  background: var(--bg4) !important;
+}
+
+/* Dark mode — nav items */
+[data-theme="dark"] .nav-item:hover {
+  background: var(--bg3) !important;
+}
+[data-theme="dark"] .nav-item.active {
+  background: rgba(63,185,80,.12) !important;
+}
+
+/* Dark mode — save chip and buttons */
+[data-theme="dark"] .save-chip,
+[data-theme="dark"] .btn-ghost {
+  background: var(--bg3) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .btn-ghost:hover {
+  background: var(--bg4) !important;
+}
+
+/* Dark mode — tabs */
+[data-theme="dark"] .tabs {
+  background: var(--bg2) !important;
+}
+
+/* Dark mode — add row button */
+[data-theme="dark"] .add-row-btn {
+  color: var(--text3) !important;
+  border-color: var(--border2) !important;
+}
+
+/* Dark mode — price cards live */
+[data-theme="dark"] .pc-card-live {
+  background: rgba(63,185,80,.06) !important;
+  border-color: var(--green-border) !important;
+}
+[data-theme="dark"] .pc-card-live.pc-card-maiz {
+  background: rgba(210,153,34,.06) !important;
+  border-color: var(--amber-border) !important;
+}
+[data-theme="dark"] .pc-card-live.pc-card-dolar {
+  background: rgba(88,166,255,.06) !important;
+  border-color: var(--blue-border) !important;
+}
+
+/* Dark mode — TC hero cards */
+[data-theme="dark"] .pc-tc-card.min {
+  background: linear-gradient(135deg, rgba(63,185,80,.08), rgba(63,185,80,.04)) !important;
+}
+[data-theme="dark"] .pc-tc-card.may {
+  background: linear-gradient(135deg, rgba(88,166,255,.08), rgba(88,166,255,.04)) !important;
+}
+
+/* Dark mode — scrollbar */
+[data-theme="dark"] #scrollBar {
+  background: var(--bg2) !important;
+  border-top-color: var(--border) !important;
+}
+
+/* Dark mode — backup menu */
+[data-theme="dark"] #backupMenu {
+  background: var(--bg2) !important;
+  border-color: var(--border) !important;
+}
+
+/* Dark mode — readonly banner */
+[data-theme="dark"] .readonly-banner {
+  background: var(--amber-bg) !important;
+}
+
+/* Dark mode — renderPrecios inline style overrides */
+[data-theme="dark"] .pc-section { background: var(--bg2) !important; border-color: var(--border) !important; }
+[data-theme="dark"] .pc-grid .pc-card { background: var(--bg3) !important; border-color: var(--border) !important; }
+[data-theme="dark"] .pc-tc-card { border-color: var(--border) !important; }
+[data-theme="dark"] .pc-month { color: var(--text3) !important; }
+[data-theme="dark"] .pc-price { color: var(--text2) !important; }
+[data-theme="dark"] .pc-num { color: var(--text) !important; }
+[data-theme="dark"] .pc-card-live .pc-num { color: var(--green) !important; }
+[data-theme="dark"] .pc-card-live.pc-card-maiz .pc-num { color: var(--amber) !important; }
+[data-theme="dark"] .pc-card-live.pc-card-dolar .pc-num { color: var(--blue) !important; }
+[data-theme="dark"] .pc-tc-val { color: var(--text) !important; }
+[data-theme="dark"] .pc-tc-label { color: var(--text3) !important; }
+[data-theme="dark"] .pc-status-row { color: var(--text3) !important; }
+
+/* Dark mode — analysis panels (precio óptimo, comparación) */
+[data-theme="dark"] [style*="background:linear-gradient(135deg,#F0FDF4"] {
+  background: rgba(63,185,80,.08) !important;
+}
+[data-theme="dark"] [style*="background:linear-gradient(135deg,#EFF6FF"] {
+  background: rgba(88,166,255,.08) !important;
+}
+
+/* Dark mode — inline bg overrides for JS panels */
+[data-theme="dark"] [style*="background:var(--green-bg)"] { background: rgba(63,185,80,.1) !important; }
+[data-theme="dark"] [style*="background:var(--blue-bg)"]  { background: rgba(88,166,255,.1) !important; }
+[data-theme="dark"] [style*="background:var(--amber-bg)"] { background: rgba(210,153,34,.1) !important; }
+[data-theme="dark"] [style*="background:var(--red-bg)"]   { background: rgba(248,81,73,.1)  !important; }
+
+/* Dark mode — sub-table body rows */
+[data-theme="dark"] .sub-table td,
+[data-theme="dark"] .data-table td,
+[data-theme="dark"] .flow-table td { 
+  border-color: var(--border) !important; 
+  color: var(--text) !important;
+}
+[data-theme="dark"] .sub-table td:first-child,
+[data-theme="dark"] .flow-table td:first-child { color: var(--text2) !important; }
+
+/* Dark mode — summary/metric cards text */
+[data-theme="dark"] .metric .ml,
+[data-theme="dark"] .kpi-label { color: var(--text3) !important; }
+
+/* Dark mode — sidebar sections */
+[data-theme="dark"] .sidebar-tc-body { background: var(--bg2) !important; }
+[data-theme="dark"] .sidebar-tc-toggle { background: var(--bg2) !important; }
+[data-theme="dark"] .sidebar-tc-toggle:hover { background: var(--bg3) !important; }
+[data-theme="dark"] .nav-section-label { color: var(--text3) !important; }
+
+/* Dark mode — month nav buttons */
+[data-theme="dark"] .month-nav button,
+[data-theme="dark"] .month-select { 
+  background: var(--bg2) !important; 
+  color: var(--text2) !important;
+  border-color: var(--border) !important;
+}
+
+/* Dark mode — venta rows */
+[data-theme="dark"] .venta-real-row td { background: rgba(63,185,80,.04) !important; }
+
+/* Dark mode — caja add form */
+[data-theme="dark"] .caja-add-mov input,
+[data-theme="dark"] .caja-add-mov select { 
+  background: var(--bg3) !important; 
+  border-color: var(--border) !important;
+}
+
+/* Dark mode — import modal */
+[data-theme="dark"] .import-modal { background: var(--bg2) !important; }
+[data-theme="dark"] .import-drop-zone { border-color: var(--border2) !important; color: var(--text3) !important; }
+[data-theme="dark"] .import-preview { background: var(--bg3) !important; border-color: var(--border) !important; }
+[data-theme="dark"] .import-banco-sel { background: var(--bg3) !important; color: var(--text) !important; }
+
+/* Dark mode — estado datos text */
+[data-theme="dark"] .estado-datos { background: var(--bg2) !important; }
 
 :root {
 
@@ -228,7 +466,7 @@ body {
   position: fixed; bottom: 24px; left: 24px; z-index: 9998;
   display: none;
   width: 40px; height: 40px; border-radius: 50%;
-  background: white; border: 1px solid var(--border);
+  background:var(--bg2); border: 1px solid var(--border);
   box-shadow: var(--shadow-md);
   align-items: center; justify-content: center;
   cursor: pointer; font-size: 16px;
@@ -242,7 +480,7 @@ body {
   display: flex; align-items: center; justify-content: center;
 }
 .login-edit-box {
-  background: white; border: 1px solid var(--border);
+  background:var(--bg2); border: 1px solid var(--border);
   border-radius: var(--radius-lg); padding: 32px 36px;
   width: 480px; max-width: 92vw;
   box-shadow: var(--shadow-lg);
@@ -264,7 +502,7 @@ body {
   width: 100%; padding: 10px 13px;
   border: 1.5px solid var(--border); border-radius: var(--radius-md);
   font-family: 'Geist', sans-serif; font-size: 13px; color: var(--text);
-  background: white; outline: none; resize: vertical;
+  background:var(--bg2); outline: none; resize: vertical;
   transition: border-color .2s, box-shadow .2s;
 }
 .le-field input:focus, .le-field textarea:focus {
@@ -292,7 +530,7 @@ body {
   width: 440px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   padding: 60px 48px;
-  background: white;
+  background:var(--bg2);
 }
 .login-form-inner { width: 100%; }
 .login-form-inner .lf-eyebrow {
@@ -327,7 +565,7 @@ body {
 .lf-field input:focus {
   border-color: var(--green);
   box-shadow: 0 0 0 3px var(--green-glow);
-  background: white;
+  background:var(--bg2);
 }
 .lf-btn {
   width: 100%; padding: 13px;
@@ -366,7 +604,7 @@ body {
 .sidebar {
   width: var(--sidebar-w);
   flex-shrink: 0;
-  background: white;
+  background:var(--bg2);
   border-right: 1px solid var(--border);
   position: fixed; top: 0; left: 0; bottom: 0;
   display: flex; flex-direction: column;
@@ -525,7 +763,7 @@ body {
 /* ── TOP BAR ──────────────────────────────────── */
 .topbar {
   height: var(--header-h);
-  background: white;
+  background:var(--bg2);
   border-bottom: 1px solid var(--border);
   padding: 0 28px;
   display: flex; align-items: center;
@@ -559,7 +797,7 @@ body {
 
 .btn-ghost {
   padding: 6px 12px; border-radius: var(--radius-sm);
-  border: 1px solid var(--border); background: white;
+  border: 1px solid var(--border); background:var(--bg2);
   font-size: 12px; font-weight: 500; color: var(--text2);
   cursor: pointer; transition: all .15s; letter-spacing: .01em;
 }
@@ -586,7 +824,7 @@ body {
   gap: 12px; margin-bottom: 24px;
 }
 .kpi-card {
-  background: white; border: 1px solid var(--border);
+  background:var(--bg2); border: 1px solid var(--border);
   border-radius: var(--radius-lg); padding: 18px 20px;
   box-shadow: var(--shadow-sm);
   animation: fadeUp .4s cubic-bezier(.22,.68,0,1.2) both;
@@ -630,7 +868,7 @@ body {
   align-items: stretch;
 }
 .stock-tile {
-  background: white; border: 1px solid var(--border);
+  background:var(--bg2); border: 1px solid var(--border);
   border-radius: var(--radius-lg); padding: 18px 22px;
   box-shadow: var(--shadow-sm);
   animation: fadeUp .5s .05s cubic-bezier(.22,.68,0,1.2) both;
@@ -673,10 +911,10 @@ body {
 .stock-edit-input:focus {
   border-color: var(--green);
   box-shadow: 0 0 0 3px var(--green-glow);
-  background: white;
+  background:var(--bg2);
 }
 .status-tile {
-  background: white; border: 1px solid var(--border);
+  background:var(--bg2); border: 1px solid var(--border);
   border-radius: var(--radius-lg); padding: 18px 22px;
   box-shadow: var(--shadow-sm); min-width: 180px;
   animation: fadeUp .5s .1s cubic-bezier(.22,.68,0,1.2) both;
@@ -730,7 +968,7 @@ body {
   width: 32px; height: 32px;
   display: flex; align-items: center; justify-content: center;
   border: 1px solid var(--border); border-radius: var(--radius-sm);
-  background: white; cursor: pointer; color: var(--text2);
+  background:var(--bg2); cursor: pointer; color: var(--text2);
   font-size: 16px; transition: all .15s;
 }
 .month-nav-btn:hover { border-color: var(--green); color: var(--green); background: var(--green-bg); }
@@ -741,13 +979,13 @@ body {
 .month-select {
   font-size: 12px; font-family: 'Geist', sans-serif;
   padding: 6px 10px; border: 1px solid var(--border);
-  border-radius: var(--radius-sm); background: white; color: var(--text);
+  border-radius: var(--radius-sm); background:var(--bg2); color: var(--text);
   outline: none; cursor: pointer;
 }
 
 /* ── CARDS / SECTIONS ─────────────────────────── */
 .card {
-  background: white; border: 1px solid var(--border);
+  background:var(--bg2); border: 1px solid var(--border);
   border-radius: var(--radius-lg); margin-bottom: 12px;
   box-shadow: var(--shadow-sm);
   overflow: hidden;
@@ -863,7 +1101,7 @@ body {
 .ov-input, .tbl-input {
   font-size: 11px; font-family: 'IBM Plex Mono', monospace;
   padding: 4px 8px; border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm); background: white; color: var(--text);
+  border-radius: var(--radius-sm); background:var(--bg2); color: var(--text);
   outline: none; transition: border-color .2s;
 }
 .ov-input { width: 80px; }
@@ -936,7 +1174,7 @@ body {
 
 /* ── PRECIOS ──────────────────────────────────── */
 .precios-section {
-  background: white; border: 1px solid var(--border);
+  background:var(--bg2); border: 1px solid var(--border);
   border-radius: var(--radius-lg); padding: 20px 22px; margin-bottom: 14px;
   box-shadow: var(--shadow-sm);
 }
@@ -983,7 +1221,7 @@ body {
   gap: 10px; margin-bottom: 18px;
 }
 .saldo-card {
-  background: white; border: 1px solid var(--border);
+  background:var(--bg2); border: 1px solid var(--border);
   border-radius: var(--radius-lg); padding: 16px 18px;
   box-shadow: var(--shadow-sm);
 }
@@ -999,12 +1237,12 @@ body {
   border-radius: var(--radius-sm); background: var(--bg3); color: var(--text);
   outline: none; transition: border-color .2s;
 }
-.saldo-card input:focus { border-color: var(--green); background: white; }
+.saldo-card input:focus { border-color: var(--green); background:var(--bg2); }
 
 .caja-day {
   border: 1px solid var(--border); border-radius: var(--radius-md);
   margin-bottom: 6px; overflow: hidden;
-  background: white; box-shadow: var(--shadow-sm);
+  background:var(--bg2); box-shadow: var(--shadow-sm);
   transition: box-shadow .15s;
 }
 .caja-day:hover { box-shadow: var(--shadow-md); }
@@ -1015,7 +1253,7 @@ body {
 }
 .caja-day-header:hover { background: var(--bg3); }
 .caja-day-header.hoy {
-  background: linear-gradient(90deg, var(--green-bg), white);
+  background: linear-gradient(90deg, var(--green-bg), var(--bg2));
   border-left: 3px solid var(--green);
 }
 .caja-day-header.deficit-dia .caja-day-saldo { color: var(--red)!important; }
@@ -1070,7 +1308,7 @@ body {
 .caja-add-mov select {
   font-size: 12px; font-family: 'Geist', sans-serif;
   padding: 6px 9px; border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm); background: white; color: var(--text);
+  border-radius: var(--radius-sm); background:var(--bg2); color: var(--text);
   outline: none; transition: border-color .2s;
 }
 .caja-add-mov input:focus, .caja-add-mov select:focus { border-color: var(--green); }
@@ -1094,7 +1332,7 @@ body {
 .cuota-fecha-input {
   width: 130px; font-size: 12px; font-family: 'Geist', sans-serif;
   padding: 5px 8px; border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm); background: white; color: var(--text);
+  border-radius: var(--radius-sm); background:var(--bg2); color: var(--text);
   outline: none; transition: border-color .2s;
 }
 .cuota-fecha-input:focus { border-color: var(--green); }
@@ -1107,7 +1345,7 @@ body {
   display: flex; align-items: center; justify-content: center;
 }
 .modal-box {
-  background: white; border: 1px solid var(--border);
+  background:var(--bg2); border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 32px 36px; width: 440px; max-width: 92vw;
   box-shadow: var(--shadow-lg);
@@ -1127,7 +1365,7 @@ body {
   width: 100%; padding: 10px 13px;
   border: 1.5px solid var(--border); border-radius: var(--radius-md);
   font-family: 'Geist', sans-serif; font-size: 14px; color: var(--text);
-  background: white; outline: none;
+  background:var(--bg2); outline: none;
   transition: border-color .2s, box-shadow .2s;
 }
 .modal-field input:focus, .modal-field select:focus {
@@ -1145,7 +1383,7 @@ body {
 .venta-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
 .venta-row:last-child { border-bottom: none; }
 .venta-label { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text2); min-width: 60px; }
-.venta-input { width: 92px; font-family: 'IBM Plex Mono', monospace; font-size: 13px; padding: 5px 9px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: white; color: var(--text); outline: none; transition: border-color .2s; }
+.venta-input { width: 92px; font-family: 'IBM Plex Mono', monospace; font-size: 13px; padding: 5px 9px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); background:var(--bg2); color: var(--text); outline: none; transition: border-color .2s; }
 .venta-input:focus { border-color: var(--green); }
 .confirm-venta-btn { @extend .btn-confirm; }
 
@@ -1158,7 +1396,7 @@ body {
 /* ── SCROLLBAR BOTTOM ─────────────────────────── */
 #scrollBar {
   position: fixed; bottom: 0; left: var(--sidebar-w); right: 0;
-  height: 10px; background: white; border-top: 1px solid var(--border);
+  height: 10px; background:var(--bg2); border-top: 1px solid var(--border);
   overflow-x: auto; overflow-y: hidden; z-index: 500; display: none;
 }
 #scrollBarInner { height: 1px; }
@@ -1191,20 +1429,20 @@ body {
 .banco-card-saldo{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700;color:var(--text);}
 .banco-card-saldo.neg{color:var(--red);}
 .banco-card-fecha{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text3);margin-top:3px;}
-.banco-card-input{width:100%;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;padding:4px 8px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:white;color:var(--text);margin-top:6px;outline:none;transition:border-color .2s;}
+.banco-card-input{width:100%;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;padding:4px 8px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg2);color:var(--text);margin-top:6px;outline:none;transition:border-color .2s;}
 .banco-card-input:focus{border-color:var(--green);box-shadow:0 0 0 2px var(--green-glow);}
 .banco-del-btn{position:absolute;top:7px;right:9px;font-size:11px;background:none;border:none;color:var(--text3);cursor:pointer;padding:0;line-height:1;transition:color .15s;}
 .banco-del-btn:hover{color:var(--red);}
 .bancos-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px;}
 .banco-add-form{display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex:1;}
-.banco-add-form input{font-size:12px;font-family:'Geist',sans-serif;padding:6px 9px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:white;color:var(--text);outline:none;transition:border-color .2s;}
+.banco-add-form input{font-size:12px;font-family:'Geist',sans-serif;padding:6px 9px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg3);color:var(--text);outline:none;transition:border-color .2s;}
 .banco-add-form input:focus{border-color:var(--green);}
 .banco-import-btn{font-size:12px;font-family:'Geist',sans-serif;font-weight:500;padding:6px 13px;border:1.5px solid var(--green-border);border-radius:var(--radius-sm);cursor:pointer;background:var(--green-bg);color:var(--green);display:flex;align-items:center;gap:5px;white-space:nowrap;transition:all .15s;}
 .banco-import-btn:hover{background:var(--green);color:white;border-color:var(--green);}
 .banco-saldo-total{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text2);padding:6px 12px;background:var(--bg3);border-radius:var(--radius-sm);border:1px solid var(--border);}
 /* IMPORT MODAL */
 .import-modal-overlay{position:fixed;inset:0;background:rgba(15,25,35,.5);backdrop-filter:blur(8px);z-index:9500;display:flex;align-items:center;justify-content:center;}
-.import-modal{background:white;border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px 32px;width:580px;max-width:95vw;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow-lg);}
+.import-modal{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px 32px;width:580px;max-width:95vw;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow-lg);}
 .import-modal h3{font-family:'Geist',sans-serif;font-size:16px;font-weight:700;margin-bottom:14px;color:var(--text);}
 .import-drop-zone{border:2px dashed var(--border2);border-radius:var(--radius-md);padding:28px;text-align:center;cursor:pointer;color:var(--text3);font-family:'IBM Plex Mono',monospace;font-size:12px;transition:all .2s;margin-bottom:12px;}
 .import-drop-zone:hover,.import-drop-zone.drag-over{border-color:var(--green);background:var(--green-bg);color:var(--green);}
@@ -1220,7 +1458,7 @@ body {
 .import-confirm-btn{font-family:'Geist',sans-serif;font-size:13px;font-weight:600;padding:8px 18px;border:none;border-radius:var(--radius-md);cursor:pointer;background:var(--green);color:white;transition:background .15s;}
 .import-confirm-btn:hover{background:#047857;}
 .import-confirm-btn:disabled{opacity:.4;cursor:not-allowed;}
-.import-banco-sel{font-family:'Geist',sans-serif;font-size:13px;padding:7px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:white;color:var(--text);margin-bottom:12px;width:100%;outline:none;}
+.import-banco-sel{font-family:'Geist',sans-serif;font-size:13px;padding:7px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg2);color:var(--text);margin-bottom:12px;width:100%;outline:none;}
 /* PAGOS CONFIRMADOS */
 .caja-pagar-btn{font-size:10px;font-family:'IBM Plex Mono',monospace;padding:3px 9px;border:1px solid var(--border2);border-radius:4px;cursor:pointer;background:var(--bg3);color:var(--text3);white-space:nowrap;transition:all .15s;flex-shrink:0;}
 .caja-pagar-btn:hover{background:var(--green-bg);border-color:var(--green);color:var(--green);}
@@ -1236,7 +1474,7 @@ body {
 .caja-day-header.pasado{opacity:.72;}
 .caja-day-header.pasado:hover{opacity:1;}
 .caja-badge.vencido-badge{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);}
-.caja-day-header.all-paid{background:linear-gradient(90deg,var(--green-bg),white);}
+.caja-day-header.all-paid{background:linear-gradient(90deg,var(--green-bg),var(--bg2));}
 
 /* ── HISTORIAL ────────────────────────────────── */
 .historial-badge { display: inline-flex; font-size: 9px; font-weight: 600; font-family: 'IBM Plex Mono', monospace; padding: 2px 7px; border-radius: 99px; letter-spacing: .06em; }
@@ -1390,13 +1628,13 @@ body {
         </div>
         <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;padding:0 4px;">
           <span style="font-size:9px;color:var(--text3);font-family:'IBM Plex Mono',monospace;white-space:nowrap;">Min:</span>
-          <input type="number" id="tcMinOv" placeholder="auto" step="10" min="1" oninput="onTcOverride()" style="width:62px;font-size:11px;font-family:'IBM Plex Mono',monospace;padding:3px 6px;border:1px solid var(--border);border-radius:5px;background:white;color:var(--text);outline:none;">
+          <input type="number" id="tcMinOv" placeholder="auto" step="10" min="1" oninput="onTcOverride()" style="width:62px;font-size:11px;font-family:'IBM Plex Mono',monospace;padding:3px 6px;border:1px solid var(--border);border-radius:5px;background:var(--bg3);color:var(--text);outline:none;">
           <span style="font-size:9px;color:var(--text3);font-family:'IBM Plex Mono',monospace;white-space:nowrap;">May:</span>
-          <input type="number" id="tcMayOv" placeholder="auto" step="10" min="1" oninput="onTcOverride()" style="width:62px;font-size:11px;font-family:'IBM Plex Mono',monospace;padding:3px 6px;border:1px solid var(--border);border-radius:5px;background:white;color:var(--text);outline:none;">
-          <button onclick="clearTcOverride()" style="font-size:9px;padding:3px 8px;border:1px solid var(--border);border-radius:5px;cursor:pointer;background:white;color:var(--text3);font-family:'IBM Plex Mono',monospace;transition:all .2s;" onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)';" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)';">Limpiar</button>
+          <input type="number" id="tcMayOv" placeholder="auto" step="10" min="1" oninput="onTcOverride()" style="width:62px;font-size:11px;font-family:'IBM Plex Mono',monospace;padding:3px 6px;border:1px solid var(--border);border-radius:5px;background:var(--bg3);color:var(--text);outline:none;">
+          <button onclick="clearTcOverride()" style="font-size:9px;padding:3px 8px;border:1px solid var(--border);border-radius:5px;cursor:pointer;background:var(--bg2);color:var(--text3);font-family:'IBM Plex Mono',monospace;transition:all .2s;" onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)';" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)';">Limpiar</button>
         </div>
         <div style="display:flex;align-items:center;gap:6px;padding:0 4px;">
-          <button onclick="fetchAllData()" style="font-size:10px;padding:5px 10px;border:1px solid var(--border);border-radius:5px;cursor:pointer;background:white;color:var(--text2);font-family:'IBM Plex Mono',monospace;transition:all .2s;flex-shrink:0;" onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)';" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)';">↻ Actualizar</button>
+          <button onclick="fetchAllData()" style="font-size:10px;padding:5px 10px;border:1px solid var(--border);border-radius:5px;cursor:pointer;background:var(--bg2);color:var(--text2);font-family:'IBM Plex Mono',monospace;transition:all .2s;flex-shrink:0;" onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)';" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)';">↻ Actualizar</button>
           <div id="lastUpdate" style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text3);line-height:1.3;">–</div>
         </div>
       </div>
@@ -1455,7 +1693,7 @@ body {
     <!-- Footer / user -->
     <div class="sidebar-footer">
       <div style="display:flex;gap:6px;margin-bottom:8px;">
-        <button id="logoutBtn" onclick="doLogout()" style="display:none;flex:1;font-size:11px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:white;color:var(--text2);cursor:pointer;font-family:'Geist',sans-serif;transition:all .2s;" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)';" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)';">Cerrar sesión</button>
+        <button id="logoutBtn" onclick="doLogout()" style="display:none;flex:1;font-size:11px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg2);color:var(--text2);cursor:pointer;font-family:'Geist',sans-serif;transition:all .2s;" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)';" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)';">Cerrar sesión</button>
       </div>
       <div class="sidebar-user">
         <div class="su-avatar" id="suAvatar">U</div>
@@ -1528,7 +1766,7 @@ body {
 /* ── COMPAT ALIASES — clases que el JS genera inline ─── */
 .stock-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; margin-bottom: 24px; }
 .stock-card {
-  background: white; border: 1px solid var(--border);
+  background:var(--bg2); border: 1px solid var(--border);
   border-radius: var(--radius-lg); padding: 18px 22px;
   box-shadow: var(--shadow-sm); transition: box-shadow .2s, border-color .2s;
 }
@@ -1542,7 +1780,7 @@ body {
   gap: 10px; margin-bottom: 22px;
 }
 .metric {
-  background: white; border: 1px solid var(--border);
+  background:var(--bg2); border: 1px solid var(--border);
   border-radius: var(--radius-lg); padding: 16px 18px;
   box-shadow: var(--shadow-sm); transition: box-shadow .2s, border-color .2s;
   position: relative; overflow: hidden;
@@ -1566,14 +1804,14 @@ body {
 
 /* Section collapsibles */
 .section {
-  background: white; border: 1px solid var(--border);
+  background:var(--bg2); border: 1px solid var(--border);
   border-radius: var(--radius-lg); margin-bottom: 10px;
   box-shadow: var(--shadow-sm); overflow: hidden;
 }
 .section-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 18px; cursor: pointer; user-select: none;
-  background: white; transition: background .15s;
+  background:var(--bg2); transition: background .15s;
   border-bottom: 1px solid transparent;
 }
 .section-header:hover { background: var(--bg3); }
@@ -1610,7 +1848,7 @@ body {
 .sub-table td input[type=text] {
   width: 100%; font-size: 12px; font-family: 'IBM Plex Mono', monospace;
   padding: 4px 8px; border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm); background: white; color: var(--text);
+  border-radius: var(--radius-sm); background:var(--bg2); color: var(--text);
   transition: border-color .2s; outline: none;
 }
 .sub-table td input:focus { border-color: var(--green); box-shadow: 0 0 0 2px var(--green-glow); }
@@ -1624,14 +1862,14 @@ body {
   padding: 7px 13px; font-size: 12px;
   font-family: 'Geist', sans-serif; font-weight: 500;
   border: 1px solid var(--border); border-radius: var(--radius-sm);
-  cursor: pointer; background: white; color: var(--text2);
+  cursor: pointer; background:var(--bg2); color: var(--text2);
   transition: all .15s;
 }
 .month-nav button:hover { border-color: var(--green); color: var(--green); background: var(--green-bg); }
 .month-nav select {
   font-size: 12px; font-family: 'Geist', sans-serif;
   padding: 7px 10px; border: 1px solid var(--border);
-  border-radius: var(--radius-sm); background: white; color: var(--text);
+  border-radius: var(--radius-sm); background:var(--bg2); color: var(--text);
   outline: none; cursor: pointer;
 }
 .cur-month {
@@ -1660,7 +1898,7 @@ body {
 
 /* Precios panel */
 .precios-panel {
-  background: white; border: 1px solid var(--border);
+  background:var(--bg2); border: 1px solid var(--border);
   border-radius: var(--radius-lg); padding: 20px 22px; margin-bottom: 14px;
   box-shadow: var(--shadow-sm);
 }
@@ -1771,6 +2009,7 @@ let LOANS=[...LOANS_DEFAULT.map(l=>({...l}))];
 let loanEdits={};
 LOANS.forEach(l=>{loanEdits[l.id]={...l};});
 let extraLoans=[];
+let deletedLoanIds=new Set(); // IDs de cuotas default borradas por el usuario
 
 let egresoModules={
   operativos:{label:'Gastos operativos',items:MONTHS.map(({key})=>({key,subItems:[{id:'op1',concepto:'Combustible',monto:0,moneda:'ars'},{id:'op2',concepto:'Mano de obra',monto:0,moneda:'ars'}]}))},
@@ -1850,6 +2089,7 @@ async function saveToFirestore(){
     const payload={
       loanEdits,
       extraLoans,
+      deletedLoanIds:[...deletedLoanIds],
       ventaOverrides,
       grainOverride,
       tcOverride,
@@ -2098,10 +2338,45 @@ function clearTcOverride(){
 // ============================================================
 // CÁLCULO
 // ============================================================
+// Helper: TC dólar futuro del mes dado, o el más cercano disponible
+function getTcFuturoMes(mesKey){
+  if(!mesKey) return getTcMin();
+  // Exacto
+  if(dolarFuturo[mesKey]) return dolarFuturo[mesKey];
+  const keys = Object.keys(dolarFuturo).sort();
+  if(!keys.length) return getTcMin();
+  // Buscar el más cercano — primero el anterior más próximo, luego el siguiente
+  let closest = null, minDiff = Infinity;
+  for(const k of keys){
+    const diff = Math.abs(new Date(k+'-01') - new Date(mesKey+'-01'));
+    if(diff < minDiff){ minDiff=diff; closest=dolarFuturo[k]; }
+  }
+  return closest || getTcMin();
+}
+
 function getLoanTotal(key){
   let t=0;
-  LOANS.forEach(l=>{if(l.mes===key){const e=loanEdits[l.id];if(e&&e.monto_ars)t+=e.monto_ars;if(e&&e.monto_usd)t+=e.monto_usd*getTcMin();}});
-  extraLoans.forEach(l=>{if(l.mes===key){const e=loanEdits[l.id]||l;if(e.monto_ars)t+=e.monto_ars;if(e.monto_usd)t+=e.monto_usd*getTcMin();}});
+  // Usar TC dólar futuro del mes de vencimiento (o el más cercano disponible)
+  const tcMes = getTcFuturoMes(key);
+  LOANS.forEach(l=>{
+    // Usar fecha exacta si está definida, sino el mes de la cuota
+    const mesReal = cuotaFechas[l.id] ? cuotaFechas[l.id].substring(0,7) : l.mes;
+    if(mesReal===key){
+      const e=loanEdits[l.id];
+      const tcUsado = getTcFuturoMes(mesReal);
+      if(e&&e.monto_ars)t+=e.monto_ars;
+      if(e&&e.monto_usd)t+=e.monto_usd*tcUsado;
+    }
+  });
+  extraLoans.forEach(l=>{
+    const mesReal = cuotaFechas[l.id] ? cuotaFechas[l.id].substring(0,7) : l.mes;
+    if(mesReal===key){
+      const e=loanEdits[l.id]||l;
+      const tcUsado = getTcFuturoMes(mesReal);
+      if(e.monto_ars)t+=e.monto_ars;
+      if(e.monto_usd)t+=e.monto_usd*tcUsado;
+    }
+  });
   return t;
 }
 function getEgresoMod(key,modKey){
@@ -2484,7 +2759,7 @@ function renderFlujoTabla(flow){
   addRow('DÉFICIT',k=>flow[k].deficit||null,'');
   return `
   <div class="flow-table-wrap"><table class="flow-table"><thead><tr>${hdr}</tr></thead><tbody>${rows.join('')}</tbody></table></div>
-  <div style="background:white;border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 22px;margin-top:14px;box-shadow:var(--shadow-sm);">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 22px;margin-top:14px;box-shadow:var(--shadow-sm);">
     <div style="font-size:10px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;">📈 Saldo acumulado & neto mensual</div>
     <div style="font-size:12px;color:var(--text3);margin-bottom:14px;">ARS · valores en millones</div>
     <div style="position:relative;width:100%;height:280px;"><canvas id="acumChart"></canvas></div>
@@ -2538,7 +2813,7 @@ function renderGranos(flow){
   const maxIngSoja=sojaDisp*bestSoja.pUsd*getTcMay();
   const maxIngMaiz=maizDisp*bestMaiz.pUsd*getTcMay();
   const optPanel=`
-  <div style="background:white;border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 22px;margin-bottom:16px;box-shadow:var(--shadow-sm);">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 22px;margin-bottom:16px;box-shadow:var(--shadow-sm);">
     <div style="font-size:10px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
       💡 Análisis de precio óptimo de venta
     </div>
@@ -2616,7 +2891,7 @@ function renderHistorial(){
   const cumplPct=proyUsd>0?Math.min(100,(totalUsdReal/proyUsd)*100):0;
   const diffUsd=totalUsdReal-proyUsd;
   const compPanel=`
-  <div style="background:white;border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 22px;margin-bottom:16px;box-shadow:var(--shadow-sm);">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 22px;margin-bottom:16px;box-shadow:var(--shadow-sm);">
     <div style="font-size:10px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;">📊 Proyectado vs. Real</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px;">
       <div style="background:var(--blue-bg);border:1px solid var(--blue-border);border-radius:var(--radius-md);padding:12px 14px;">
@@ -2723,7 +2998,7 @@ function renderPrecios(){
   return `
   <style>
   .pc-header-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
-  .pc-section{background:white;border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px 24px;margin-bottom:14px;box-shadow:var(--shadow-sm);}
+  .pc-section{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px 24px;margin-bottom:14px;box-shadow:var(--shadow-sm);}
   .pc-section-title{display:flex;align-items:center;gap:8px;margin-bottom:16px;}
   .pc-section-title h3{font-size:13px;font-weight:700;color:var(--text);letter-spacing:-.01em;}
   .pc-section-title .pc-eyebrow{font-size:9px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;}
@@ -2745,7 +3020,7 @@ function renderPrecios(){
   .pc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px;}
   .pc-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px 13px;transition:all .2s;position:relative;overflow:hidden;}
   .pc-card:hover{border-color:var(--border2);box-shadow:var(--shadow-md);transform:translateY(-1px);}
-  .pc-card-live{background:white;border-color:var(--green-border);}
+  .pc-card-live{background:var(--bg2);border-color:var(--green-border);}
   .pc-card-live.pc-card-maiz{border-color:var(--amber-border);}
   .pc-card-live.pc-card-dolar{border-color:var(--blue-border);}
   .pc-card-near{box-shadow:var(--shadow-sm);}
@@ -2764,8 +3039,8 @@ function renderPrecios(){
   .pc-src-fb{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border);}
   .pc-src-ov{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border);}
   .pc-badge{font-size:8px;font-weight:700;font-family:'IBM Plex Mono',monospace;padding:2px 5px;border-radius:3px;}
-  .pc-up{background:#F0FDF4;color:#059669;border:1px solid #A7F3D0;}
-  .pc-down{background:#FEF2F2;color:#DC2626;border:1px solid #FECACA;}
+  .pc-up{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
+  .pc-down{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);}
   .pc-neutral{background:var(--bg3);color:var(--text3);border:1px solid var(--border);}
   .pc-status-row{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace;}
   </style>
@@ -2852,19 +3127,33 @@ function renderCreditos(){
     const sf=fv?'':'<span style="font-size:9px;color:var(--amber);font-family:IBM Plex Mono,monospace;margin-left:3px;">sin fecha</span>';
     const db=isReadOnly?'':'<button class="del-btn" onclick="delLoan(\''+l.id+'\')">&#x2715;</button>';
     const d=isReadOnly?'disabled':'';
+    // Fix 3: TC dólar futuro del mes de vencimiento para convertir USD→ARS
+    const mesVto = fv ? fv.substring(0,7) : (e.mes||'');
+    const tcMesVto = mesVto ? getTcFuturoMes(mesVto) : getTcMin();
+    const totConTcFuturo = (e.monto_ars||0) + (e.monto_usd||0) * tcMesVto;
+    // Mostrar qué mes de futuro se usó
+    const futurKeys = Object.keys(dolarFuturo).sort();
+    const futurUsado = mesVto && futurKeys.length
+      ? futurKeys.reduce((a,b) =>
+          Math.abs(new Date(b+'-01')-new Date(mesVto+'-01')) <
+          Math.abs(new Date(a+'-01')-new Date(mesVto+'-01')) ? b : a)
+      : null;
+    const esFuturoExacto = futurUsado === mesVto;
+    const tcLabel = futurUsado
+      ? '<span style="font-size:9px;color:var(--blue);font-family:IBM Plex Mono,monospace;margin-left:4px;">TC '+(esFuturoExacto?'':'≈')+futurUsado.substring(5,7)+'/'+futurUsado.substring(0,4)+'</span>'
+      : '';
     return '<tr>'
-      +'<td><input type="text" value="'+e.mes+'" style="width:84px;" '+d+' oninput="editLoan(\''+l.id+'\',\'mes\',this.value)"></td>'
       +'<td><input type="date" class="cuota-fecha-input" value="'+fv+'" '+d+' onchange="editCuotaFecha(\''+l.id+'\',this.value)" style="border-color:'+bc+'">'+sf+'</td>'
       +'<td><input type="text" value="'+e.banco+'" '+d+' oninput="editLoan(\''+l.id+'\',\'banco\',this.value)"></td>'
       +'<td><input type="text" value="'+e.concepto+'" '+d+' oninput="editLoan(\''+l.id+'\',\'concepto\',this.value)"></td>'
       +'<td><input type="number" value="'+(e.monto_ars||'')+'" placeholder="ARS" '+d+' oninput="editLoan(\''+l.id+'\',\'monto_ars\',this.value)"></td>'
       +'<td><input type="number" value="'+(e.monto_usd||'')+'" placeholder="USD" '+d+' oninput="editLoan(\''+l.id+'\',\'monto_usd\',this.value)"></td>'
-      +'<td style="font-family:\'IBM Plex Mono\',monospace;white-space:nowrap;">$ '+fmt(tot)+'</td>'
+      +'<td style="font-family:\'IBM Plex Mono\',monospace;white-space:nowrap;">$ '+fmt(totConTcFuturo)+tcLabel+'</td>'
       +'<td>'+db+'</td></tr>';
   }).join('');
   return '<div class="info-note">La columna <b>FECHA EXACTA VTO.</b> (verde = asignada, naranja = pendiente) hace que la cuota aparezca en el día correcto del Flujo de Caja diario. Se ordenan automáticamente por fecha de vencimiento.</div>'
     +'<div class="flow-table-wrap"><table class="sub-table">'
-    +'<thead><tr><th>MES</th><th>FECHA EXACTA VTO.</th><th>BANCO/ENTIDAD</th><th>CONCEPTO</th><th>MONTO ARS</th><th>MONTO USD</th><th>TOTAL ARS</th><th></th></tr></thead>'
+    +'<thead><tr><th>FECHA VTO.</th><th>BANCO/ENTIDAD</th><th>CONCEPTO</th><th>MONTO ARS</th><th>MONTO USD</th><th>TOTAL ARS</th><th></th></tr></thead>'
     +'<tbody>'+rows+'</tbody></table></div>'
     +(isReadOnly?'':'<button class="add-row-btn" onclick="addLoan()">+ Agregar cuota</button>');
 }
@@ -3085,10 +3374,10 @@ function calcCajaFlow(){
 function renderCampanas(){
   const addRow=campanias.map((c,i)=>`
     <tr>
-      <td><input type="text" value="${c.nombre||''}" ${isReadOnly?'disabled':''} oninput="editCampania(${i},'nombre',this.value)" placeholder="ej: Campaña 2027/28" style="width:160px;font-size:13px;padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:white;color:var(--text);outline:none;font-family:'Geist',sans-serif;"></td>
-      <td><input type="number" value="${c.anio||''}" ${isReadOnly?'disabled':''} oninput="editCampania(${i},'anio',this.value)" placeholder="2027" style="width:80px;font-size:13px;padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:white;color:var(--text);outline:none;font-family:'IBM Plex Mono',monospace;"></td>
-      <td><input type="number" step="0.01" value="${c.soja||''}" ${isReadOnly?'disabled':''} oninput="editCampania(${i},'soja',this.value)" placeholder="tn soja" style="width:110px;font-size:13px;padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:white;color:var(--text);outline:none;font-family:'IBM Plex Mono',monospace;"></td>
-      <td><input type="number" step="0.01" value="${c.maiz||''}" ${isReadOnly?'disabled':''} oninput="editCampania(${i},'maiz',this.value)" placeholder="tn maíz" style="width:110px;font-size:13px;padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:white;color:var(--text);outline:none;font-family:'IBM Plex Mono',monospace;"></td>
+      <td><input type="text" value="${c.nombre||''}" ${isReadOnly?'disabled':''} oninput="editCampania(${i},'nombre',this.value)" placeholder="ej: Campaña 2027/28" style="width:160px;font-size:13px;padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg3);color:var(--text);outline:none;font-family:'Geist',sans-serif;"></td>
+      <td><input type="number" value="${c.anio||''}" ${isReadOnly?'disabled':''} oninput="editCampania(${i},'anio',this.value)" placeholder="2027" style="width:80px;font-size:13px;padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg3);color:var(--text);outline:none;font-family:'IBM Plex Mono',monospace;"></td>
+      <td><input type="number" step="0.01" value="${c.soja||''}" ${isReadOnly?'disabled':''} oninput="editCampania(${i},'soja',this.value)" placeholder="tn soja" style="width:110px;font-size:13px;padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg3);color:var(--text);outline:none;font-family:'IBM Plex Mono',monospace;"></td>
+      <td><input type="number" step="0.01" value="${c.maiz||''}" ${isReadOnly?'disabled':''} oninput="editCampania(${i},'maiz',this.value)" placeholder="tn maíz" style="width:110px;font-size:13px;padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg3);color:var(--text);outline:none;font-family:'IBM Plex Mono',monospace;"></td>
       <td style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--green);">$ ${fmt((+c.soja||0)*getGrainPrice('soja',c.anio+'-07').v*getTcMay()+(+c.maiz||0)*getGrainPrice('maiz',c.anio+'-07').v*getTcMay(),0)}</td>
       <td>${isReadOnly?'':`<button class="del-btn" onclick="delCampania(${i})">✕</button>`}</td>
     </tr>`).join('')||`<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px;font-family:'IBM Plex Mono',monospace;font-size:12px;">Sin campañas adicionales — el stock inicial se carga en Vista Mensual.</td></tr>`;
@@ -3097,7 +3386,7 @@ function renderCampanas(){
   const totalMaizExtra=campanias.reduce((a,c)=>a+(+c.maiz||0),0);
 
   return `
-  <div style="background:white;border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 22px;margin-bottom:14px;box-shadow:var(--shadow-sm);">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 22px;margin-bottom:14px;box-shadow:var(--shadow-sm);">
     <div style="font-size:10px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;">🌾 Gestión de Campañas y Cosechas</div>
     <div style="font-size:12px;color:var(--text3);margin-bottom:16px;">Registrá las cosechas futuras — el stock se suma al disponible para proyección en el mes que indiques.</div>
     <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
@@ -3795,6 +4084,9 @@ function addLoan(){
 }
 function delLoan(id){
   if(isReadOnly)return;
+  // Marcar como eliminado ANTES de remover de los arrays
+  deletedLoanIds.add(id);
+  delete cuotaFechas[id];
   let i=LOANS.findIndex(l=>l.id===id);if(i>=0){LOANS.splice(i,1);delete loanEdits[id];}
   i=extraLoans.findIndex(l=>l.id===id);if(i>=0){extraLoans.splice(i,1);delete loanEdits[id];}
   scheduleFirestoreSave();renderAll();
@@ -4135,7 +4427,7 @@ setInterval(fetchAllData,5*60*1000);
     if(existing){existing.remove();return;}
     const menu=document.createElement('div');
     menu.id='backupMenu';
-    menu.style.cssText='position:fixed;top:68px;right:16px;z-index:8000;background:white;border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:8px;min-width:200px;animation:fadeUp .2s ease;';
+    menu.style.cssText='position:fixed;top:68px;right:16px;z-index:8000;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:8px;min-width:200px;animation:fadeUp .2s ease;';
     menu.innerHTML=`
       <div style="font-size:9px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;padding:4px 8px 8px;">Backup & Exportación</div>
       <button onclick="exportCSV();document.getElementById('backupMenu')?.remove();" style="width:100%;text-align:left;padding:8px 12px;border:none;background:none;cursor:pointer;border-radius:var(--radius-sm);font-size:13px;color:var(--text);font-family:'Geist',sans-serif;display:flex;align-items:center;gap:8px;transition:background .15s;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='none'">📊 Exportar CSV (flujo)</button>
