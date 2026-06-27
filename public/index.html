@@ -3148,7 +3148,7 @@ function renderCreditos(){
       +'<td><input type="text" value="'+e.concepto+'" '+d+' oninput="editLoan(\''+l.id+'\',\'concepto\',this.value)"></td>'
       +'<td><input type="number" value="'+(e.monto_ars||'')+'" placeholder="ARS" '+d+' oninput="editLoan(\''+l.id+'\',\'monto_ars\',this.value)"></td>'
       +'<td><input type="number" value="'+(e.monto_usd||'')+'" placeholder="USD" '+d+' oninput="editLoan(\''+l.id+'\',\'monto_usd\',this.value)"></td>'
-      +'<td style="font-family:\'IBM Plex Mono\',monospace;white-space:nowrap;">$ '+fmt(totConTcFuturo)+tcLabel+'</td>'
+      +'<td style="font-family:\'IBM Plex Mono\',monospace;white-space:nowrap;" data-loan-total="'+l.id+'">$ '+fmt(totConTcFuturo)+tcLabel+'</td>'
       +'<td>'+db+'</td></tr>';
   }).join('');
   return '<div class="info-note">La columna <b>FECHA EXACTA VTO.</b> (verde = asignada, naranja = pendiente) hace que la cuota aparezca en el día correcto del Flujo de Caja diario. Se ordenan automáticamente por fecha de vencimiento.</div>'
@@ -3196,7 +3196,7 @@ function renderEgresosMod(){
             </select>
           </td>
           <td><input type="number" step="0.01" value="${s.monto||0}" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'monto',this.value)"></td>
-          <td style="font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">${s.moneda==='usd'?'≈ $ '+fmt((+s.monto||0)*getTcMin()):''}</td>
+          <td style="font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;" data-egreso-equiv="${modKey}_${curMk.key}_${si}">${s.moneda==='usd'?'≈ $ '+fmt((+s.monto||0)*getTcFuturoMes(curMk.key)):''}</td>
           <td><input type="date" value="${s.fecha_vto||''}" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'fecha_vto',this.value)" class="cuota-fecha-input" title="Fecha exacta de vencimiento"></td>
           <td>${isReadOnly?'':'<button class="del-btn" onclick="delEgreso(\''+modKey+'\',\''+curMk.key+'\','+si+')">✕</button>'}</td>
         </tr>`).join('');
@@ -4070,11 +4070,16 @@ function editLoan(id,field,val){
   if(!loanEdits[id])loanEdits[id]={};
   loanEdits[id][field]=(field==='monto_ars'||field==='monto_usd')?(val===''?null:+val):val;
   scheduleFirestoreSave();
-  // Solo re-render en campos numéricos; en texto solo guardar para no perder el foco
+  // NO re-renderizar la tabla — solo actualizar la celda de total en el DOM
+  // Así el input no pierde el foco mientras el usuario escribe
   if(field==='monto_ars'||field==='monto_usd'){
-    const openIds=Array.from(document.querySelectorAll('.section-body.open')).map(el=>el.id);
-    renderTabContent();
-    openIds.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('open');});
+    const e=loanEdits[id]||{};
+    const fv=cuotaFechas[id]||'';
+    const mesVto=fv?fv.substring(0,7):(e.mes||'');
+    const tcUsado=getTcFuturoMes(mesVto);
+    const tot=(e.monto_ars||0)+(e.monto_usd||0)*tcUsado;
+    const totalCell=document.querySelector('[data-loan-total="'+id+'"]');
+    if(totalCell)totalCell.textContent='$ '+fmt(tot);
   }
 }
 function addLoan(){
@@ -4098,29 +4103,51 @@ function editEgreso(modKey,key,si,field,val){
   const numFields=['monto','tn_soja','tn_maiz'];
   mdata.subItems[si][field]=numFields.includes(field)?(+val||0):val;
 
-  // FIX 3: si cambia la fecha de vencimiento y el mes no coincide con el mes actual,
-  // mover el subItem al mes correspondiente
+  scheduleFirestoreSave();
+
+  // Cambio de fecha: mover al mes de vencimiento y re-renderizar (necesario)
   if(field==='fecha_vto' && val){
     const mesVto=val.substring(0,7);
-    if(mesVto !== key){
+    if(mesVto!==key){
       const itemMovido=mdata.subItems.splice(si,1)[0];
       const mdataDest=egresoModules[modKey].items.find(i=>i.key===mesVto);
-      if(mdataDest){
-        mdataDest.subItems.push(itemMovido);
-      } else {
-        // mes fuera del rango, dejarlo donde está (restaurar)
-        mdata.subItems.splice(si,0,itemMovido);
-      }
+      if(mdataDest){ mdataDest.subItems.push(itemMovido); }
+      else { mdata.subItems.splice(si,0,itemMovido); }
+      // Re-render solo cuando cambia de sección (inevitable)
+      const openIds=Array.from(document.querySelectorAll('.section-body.open')).map(el=>el.id);
+      renderTabContent();
+      openIds.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('open');});
+      return;
     }
   }
 
-  scheduleFirestoreSave();
-  // No re-render en campos de texto para no perder el foco; solo en numéricos/fecha
-  if(field==='monto'||field==='tn_soja'||field==='tn_maiz'||field==='fecha_vto'||field==='moneda'){
+  // Cambio de moneda: re-renderizar solo la fila (actualiza el placeholder y el total)
+  if(field==='moneda'){
     const openIds=Array.from(document.querySelectorAll('.section-body.open')).map(el=>el.id);
     renderTabContent();
     openIds.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('open');});
+    return;
   }
+
+  // Para monto/tn_soja/tn_maiz: actualizar solo la celda del total en el DOM
+  // sin re-renderizar para no perder el foco del input
+  if(field==='monto'||field==='tn_soja'||field==='tn_maiz'){
+    const item=mdata.subItems[si];
+    let totalArs=0;
+    if(item.moneda==='ars'){ totalArs=item.monto||0; }
+    else if(item.moneda==='usd'){ totalArs=(item.monto||0)*getTcFuturoMes(key); }
+    else if(item.moneda==='tn_soja'){ totalArs=(item.tn_soja||0)*getGrainPrice('soja',key).v*getTcMay(); }
+    else if(item.moneda==='tn_maiz'){ totalArs=(item.tn_maiz||0)*getGrainPrice('maiz',key).v*getTcMay(); }
+    const totalCell=document.querySelector('[data-egreso-total="'+modKey+'_'+key+'_'+si+'"]');
+    if(totalCell) totalCell.textContent='$ '+fmt(totalArs);
+    // También actualizar la celda de equivalencia ≈ ARS para moneda USD
+    const equivCell=document.querySelector('[data-egreso-equiv="'+modKey+'_'+key+'_'+si+'"]');
+    if(equivCell){
+      const item2=mdata.subItems[si];
+      equivCell.textContent=item2.moneda==='usd'?'≈ $ '+fmt((+item2.monto||0)*getTcFuturoMes(key)):'';
+    }
+  }
+  // Texto (concepto, obs): no re-renderizar, ya se guardó en memoria
 }
 function addEgreso(modKey,key,bodyId){
   if(isReadOnly)return;
