@@ -11,7 +11,7 @@ export default async function handler(req, res) {
 
   const FALLBACK = {
     // Actualizado al cierre de A3 del 26/06/2026
-    soja: {"2026-07":327.6,"2026-09":331.8,"2026-11":335.6,"2027-01":0,"2027-03":0,"2027-05":327.9,"2027-07":335.0},
+    soja: {"2026-07":327.6,"2026-09":331.8,"2026-11":335.6,"2027-05":327.9,"2027-07":335.0},
     maiz: {"2026-07":178.5,"2026-08":178.0,"2026-09":181.1,"2026-11":181.0,"2026-12":186.2,
            "2027-01":190.0,"2027-04":183.0,"2027-07":178.8,"2027-09":180.0},
   };
@@ -131,6 +131,10 @@ export default async function handler(req, res) {
     sojaOk           ? "Primary_soja+fallback_maiz" :
     cacheOk          ? "cache_ultimo_cierre" :
     "fallback_static";
+
+  // Eliminar entradas con precio 0 o null
+  Object.keys(sojaFinal).forEach(k => { if (!sojaFinal[k] || sojaFinal[k] <= 0) delete sojaFinal[k]; });
+  Object.keys(maizFinal).forEach(k => { if (!maizFinal[k] || maizFinal[k] <= 0) delete maizFinal[k]; });
 
   return res.status(200).json({
     ok: true,
