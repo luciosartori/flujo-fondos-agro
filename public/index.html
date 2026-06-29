@@ -2354,6 +2354,16 @@ function getTcFuturoMes(mesKey){
   return closest || getTcMin();
 }
 
+// Helper: calcula el recargo según tipo de pago
+function getRecargoPago(monto, tipo_pago){
+  if(!monto || monto<=0) return 0;
+  if(tipo_pago==='echeq') return monto * 0.006; // 0,6% impuesto al cheque
+  return 0;
+}
+function getMontoConRecargo(monto, tipo_pago){
+  return (monto||0) + getRecargoPago(monto, tipo_pago);
+}
+
 function getLoanTotal(key){
   let t=0;
   // Usar TC dólar futuro del mes de vencimiento (o el más cercano disponible)
@@ -2385,13 +2395,14 @@ function getEgresoMod(key,modKey){
   if(!mdata)return 0;
   if(modKey==='arrendamientos'){
     mdata.subItems.forEach(s=>{
-      t+=(+s.tn_soja||0)*getGrainPrice('soja',key).v*getTcMay();
-      t+=(+s.tn_maiz||0)*getGrainPrice('maiz',key).v*getTcMay();
+      const base=(+s.tn_soja||0)*getGrainPrice('soja',key).v*getTcMay()
+               +(+s.tn_maiz||0)*getGrainPrice('maiz',key).v*getTcMay();
+      t+=getMontoConRecargo(base, s.tipo_pago);
     });
   } else {
     mdata.subItems.forEach(s=>{
-      if(s.moneda==='usd') t+=(+s.monto||0)*getTcMin();
-      else t+=(+s.monto||0);
+      const base=s.moneda==='usd'?(+s.monto||0)*getTcMin():(+s.monto||0);
+      t+=getMontoConRecargo(base, s.tipo_pago);
     });
   }
   return t;
@@ -3187,25 +3198,49 @@ function renderEgresosMod(){
           <td>${isReadOnly?'':'<button class="del-btn" onclick="delEgreso(\''+modKey+'\',\''+curMk.key+'\','+si+')">✕</button>'}</td>
         </tr>`).join('');
       } else {
-        subRows=mdata.subItems.map((s,si)=>`<tr>
-          <td><input type="text" value="${s.concepto||''}" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'concepto',this.value)"></td>
+        subRows=mdata.subItems.map((s,si)=>{
+          const tipoPago=s.tipo_pago||'transferencia';
+          const tipoPagoLabels={transferencia:'TRANSF.',echeq:'E-CHEQ',factura:'FACTURA',seguro:'SEGURO',tarjeta:'TARJETA',debito_auto:'DÉB.AUT.'};
+          const tipoPagoColors={echeq:'var(--amber)',seguro:'var(--blue)',tarjeta:'var(--blue)',debito_auto:'var(--blue)',transferencia:'var(--text3)',factura:'var(--text3)'};
+          const tipoPagoBgs={echeq:'var(--amber-bg)',seguro:'var(--blue-bg)',tarjeta:'var(--blue-bg)',debito_auto:'var(--blue-bg)',transferencia:'var(--bg3)',factura:'var(--bg3)'};
+          const montoBase=s.moneda==='usd'?(+s.monto||0)*getTcFuturoMes(curMk.key):(+s.monto||0);
+          const recargo=tipoPago==='echeq'&&montoBase>0?montoBase*0.006:0;
+          const totalConRecargo=montoBase+recargo;
+          const tipoBadge='<span style="font-size:8px;font-family:IBM Plex Mono,monospace;padding:1px 5px;border-radius:3px;background:'+tipoPagoBgs[tipoPago]+';color:'+tipoPagoColors[tipoPago]+';border:1px solid '+tipoPagoColors[tipoPago]+'40;white-space:nowrap;">'+tipoPagoLabels[tipoPago]+'</span>';
+          const desglose=recargo>0
+            ?'<div style="font-size:9px;color:var(--amber);font-family:IBM Plex Mono,monospace;margin-top:2px;">+ $ '+fmt(recargo)+' imp.cheque</div>'
+            :(s.moneda==='usd'?'<div style="font-size:9px;color:var(--text3);font-family:IBM Plex Mono,monospace;">≈ $ '+fmt(montoBase)+'</div>':'');
+          return \`<tr>
+          <td><input type="text" value="\${s.concepto||''}" \${isReadOnly?'disabled':''} onchange="editEgreso('\${modKey}','\${curMk.key}',\${si},'concepto',this.value)"></td>
           <td>
-            <select style="font-size:11px;font-family:'IBM Plex Mono',monospace;padding:3px 6px;border:0.5px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'moneda',this.value)">
-              <option value="ars" ${(s.moneda||'ars')==='ars'?'selected':''}>ARS $</option>
-              <option value="usd" ${s.moneda==='usd'?'selected':''}>USD U$S</option>
+            <select style="font-size:10px;font-family:'IBM Plex Mono',monospace;padding:2px 5px;border:0.5px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);width:100%;" \${isReadOnly?'disabled':''} onchange="editEgreso('\${modKey}','\${curMk.key}',\${si},'tipo_pago',this.value)">
+              <option value="transferencia" \${tipoPago==='transferencia'?'selected':''}>Transferencia</option>
+              <option value="echeq" \${tipoPago==='echeq'?'selected':''}>E-Cheq (+0,6%)</option>
+              <option value="factura" \${tipoPago==='factura'?'selected':''}>Factura</option>
+              <option value="seguro" \${tipoPago==='seguro'?'selected':''}>Seguro</option>
+              <option value="tarjeta" \${tipoPago==='tarjeta'?'selected':''}>Tarjeta</option>
+              <option value="debito_auto" \${tipoPago==='debito_auto'?'selected':''}>Déb. automático</option>
             </select>
           </td>
-          <td><input type="number" step="0.01" value="${s.monto||0}" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'monto',this.value)"></td>
-          <td style="font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;" data-egreso-equiv="${modKey}_${curMk.key}_${si}">${s.moneda==='usd'?'≈ $ '+fmt((+s.monto||0)*getTcFuturoMes(curMk.key)):''}</td>
-          <td><input type="date" value="${s.fecha_vto||''}" ${isReadOnly?'disabled':''} onchange="editEgreso('${modKey}','${curMk.key}',${si},'fecha_vto',this.value)" class="cuota-fecha-input" title="Fecha exacta de vencimiento"></td>
-          <td>${isReadOnly?'':'<button class="del-btn" onclick="delEgreso(\''+modKey+'\',\''+curMk.key+'\','+si+')">✕</button>'}</td>
-        </tr>`).join('');
+          <td>
+            <select style="font-size:11px;font-family:'IBM Plex Mono',monospace;padding:3px 6px;border:0.5px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);" \${isReadOnly?'disabled':''} onchange="editEgreso('\${modKey}','\${curMk.key}',\${si},'moneda',this.value)">
+              <option value="ars" \${(s.moneda||'ars')==='ars'?'selected':''}>ARS $</option>
+              <option value="usd" \${s.moneda==='usd'?'selected':''}>USD U$S</option>
+            </select>
+          </td>
+          <td><input type="number" step="0.01" value="\${s.monto||0}" \${isReadOnly?'disabled':''} onchange="editEgreso('\${modKey}','\${curMk.key}',\${si},'monto',this.value)"></td>
+          <td style="font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;" data-egreso-equiv="\${modKey}_\${curMk.key}_\${si}">\${desglose}</td>
+          <td style="font-family:'IBM Plex Mono',monospace;font-size:12px;" data-egreso-total="\${modKey}_\${curMk.key}_\${si}">$ \${fmt(totalConRecargo)}</td>
+          <td><input type="date" value="\${s.fecha_vto||''}" \${isReadOnly?'disabled':''} onchange="editEgreso('\${modKey}','\${curMk.key}',\${si},'fecha_vto',this.value)" class="cuota-fecha-input" title="Fecha exacta de vencimiento"></td>
+          <td>\${isReadOnly?'':\`<button class="del-btn" onclick="delEgreso('\${modKey}','\${curMk.key}',\${si})">✕</button>\`}</td>
+        </tr>\`;
+        }).join('');
       }
     }
 
     const thead = esArrendamiento
       ? '<tr><th>CONCEPTO</th><th>TN SOJA</th><th>≈ ARS</th><th>TN MAÍZ</th><th>≈ ARS</th><th>FECHA VTO.</th><th>TOTAL ARS</th><th></th></tr>'
-      : '<tr><th>CONCEPTO</th><th>MONEDA</th><th>MONTO</th><th>≈ ARS</th><th>FECHA VTO.</th><th></th></tr>';
+      : '<tr><th>CONCEPTO</th><th>TIPO PAGO</th><th>MONEDA</th><th>MONTO</th><th>DESGLOSE</th><th>TOTAL ARS</th><th>FECHA VTO.</th><th></th></tr>';
 
     return `<div class="section" style="margin-bottom:10px;">
       <div class="section-header" onclick="toggleSection('${bodyId}')">
@@ -3281,13 +3316,22 @@ function bindCharts(flow){
 // ============================================================
 // FLUJO DE CAJA DIARIO — RENDER Y LÓGICA
 // ============================================================
+let _cajaDiasPasados = 30; // cuántos días pasados mostrar (configurable)
 function getCajaDias(){
   const dias=[];const hoy=new Date();hoy.setHours(0,0,0,0);
+  // Días pasados (de más antiguo a más reciente)
+  for(let i=_cajaDiasPasados;i>0;i--){
+    const d=new Date(hoy);d.setDate(hoy.getDate()-i);
+    const fecha=d.toISOString().split('T')[0];
+    const mesKey=fecha.substring(0,7);
+    dias.push({fecha,mesKey,d,esHoy:false,esPasado:true});
+  }
+  // Hoy + 30 días futuros
   for(let i=0;i<30;i++){
     const d=new Date(hoy);d.setDate(hoy.getDate()+i);
     const fecha=d.toISOString().split('T')[0];
     const mesKey=fecha.substring(0,7);
-    dias.push({fecha,mesKey,d,esHoy:i===0});
+    dias.push({fecha,mesKey,d,esHoy:i===0,esPasado:false});
   }
   return dias;
 }
@@ -3312,18 +3356,20 @@ function getCajaMovsDia(fechaKey){
     mod.items.forEach(mdata=>{
       mdata.subItems.forEach(s=>{
         const esArr=modKey==='arrendamientos';
-        const montoArs=esArr
+        const montoBase=esArr
           ?((+s.tn_soja||0)*getGrainPrice('soja',mdata.key).v+(+s.tn_maiz||0)*getGrainPrice('maiz',mdata.key).v)*getTcMay()
           :(s.moneda==='usd'?(+s.monto||0)*getTcMin():(+s.monto||0));
+        const montoArs=getMontoConRecargo(montoBase, s.tipo_pago);
         if(montoArs<=0)return;
         if(s.fecha_vto && s.fecha_vto===fechaKey){
-          // Tiene fecha exacta — aparece ese día
-          movs.push({id:'egr_'+modKey+'_'+s.id,tipo:'egreso_variable',concepto:s.concepto,banco:mod.label,monto_ars:montoArs,monto_usd:s.moneda==='usd'?(+s.monto||0):0,origen:'modulo'});
+          // Tiene fecha exacta — solo afecta saldo si está pagado
+          const recargoCaja=s.tipo_pago==='echeq'?montoBase*0.006:0;
+          movs.push({id:'egr_'+modKey+'_'+s.id,tipo:'egreso_variable',concepto:s.concepto,banco:mod.label,monto_ars:montoArs,monto_ars_base:montoBase,recargo:recargoCaja,tipo_pago:s.tipo_pago||'transferencia',monto_usd:s.moneda==='usd'?(+s.monto||0):0,origen:'egreso_vto'});
         } else if(!s.fecha_vto && mdata.key===mesKey){
           // Sin fecha exacta — aparece el día 1 del mes
           const diaNum=parseInt(fechaKey.split('-')[2]);
           if(diaNum===1){
-            movs.push({id:'egr_'+modKey+'_'+s.id,tipo:'egreso_variable',concepto:s.concepto,banco:mod.label,monto_ars:montoArs,monto_usd:s.moneda==='usd'?(+s.monto||0):0,origen:'modulo'});
+            movs.push({id:'egr_'+modKey+'_'+s.id,tipo:'egreso_variable',concepto:s.concepto,banco:mod.label,monto_ars:montoArs,monto_ars_base:montoBase,recargo:s.tipo_pago==='echeq'?montoBase*0.006:0,tipo_pago:s.tipo_pago||'transferencia',monto_usd:s.moneda==='usd'?(+s.monto||0):0,origen:'modulo'});
           }
         }
       });
@@ -3359,6 +3405,13 @@ function calcCajaFlow(){
     let deltaArs=0,deltaUsd=0;
     movs.forEach(m=>{
       const sign=m.tipo==='ingreso'?1:-1;
+      // Vencimientos de cuotas y egresos: solo afectan el saldo si están pagados
+      const esVencimiento = m.origen==='cuota' || m.origen==='egreso_vto';
+      if(esVencimiento){
+        const pagoKey = m.id+'_'+dia.fecha;
+        const pagado = !!vencimientosPagados[pagoKey];
+        if(!pagado) return; // No pagado → no afecta el saldo
+      }
       deltaArs+=sign*Math.abs(m.monto_ars||0);
       deltaUsd+=sign*Math.abs(m.monto_usd||0);
     });
@@ -3506,15 +3559,20 @@ function renderCaja(){
     if(!lista.length)return'';
     const rows=lista.map(m=>{
       const esCuota=m.origen==='cuota';
-      const pagoKey=esCuota?(m.id+'_'+fecha):'';
-      const pagado=esCuota&&!!vencimientosPagados[pagoKey];
-      const pagoBtn=esCuota&&!isReadOnly
+      const esEgresoVto=m.origen==='egreso_vto';
+      const esVencimiento=esCuota||esEgresoVto;
+      const pagoKey=esVencimiento?(m.id+'_'+fecha):'';
+      const pagado=esVencimiento&&!!vencimientosPagados[pagoKey];
+      const pagoBtn=esVencimiento&&!isReadOnly
         ?'<button class="caja-pagar-btn'+(pagado?' ya-pagado':'')+'" onclick="toggleVencimientoPagado(\''+pagoKey+'\')">'+(pagado?'↩ Desmarcar':'✅ Pagado')+'</button>'
         :'';
-      const pagadoBadge=pagado?'<span class="caja-pagado-badge">✅ PAGADO</span>':'';
-      const tagLabel=esCuota?m.banco:(m.origen==='venta_real'?'GRANO':(m.origen==='banco_imp'?m.banco:'MANUAL'));
+      const pagadoBadge=pagado?'<span class="caja-pagado-badge">✅ PAGADO</span>'
+        :(esVencimiento?'<span style="font-size:9px;font-family:IBM Plex Mono,monospace;padding:2px 6px;border-radius:4px;background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border);">⏳ PENDIENTE</span>':'');
+      const tipoPagoLabels={transferencia:'TRANSF.',echeq:'E-CHEQ',factura:'FACTURA',seguro:'SEGURO',tarjeta:'TARJETA',debito_auto:'DÉB.AUT.'};
+      const tagLabel=esCuota?m.banco:(esEgresoVto?(tipoPagoLabels[m.tipo_pago]||m.banco):(m.origen==='venta_real'?'GRANO':(m.origen==='banco_imp'?m.banco:'MANUAL')));
+      const recargoHtml=m.recargo>0?('<div style="font-size:9px;color:var(--amber);font-family:IBM Plex Mono,monospace;">+ $ '+fmt(m.recargo)+' imp.cheque</div>'):'';
       const obsHtml=m.obs?(' <span style="color:var(--text3);font-size:10px;">('+m.obs+')</span>'):'';
-      const montoArsHtml=m.monto_ars?('<div class="caja-mov-monto '+(colorClass==='ingreso'?'pos':'neg')+'">'+(colorClass==='ingreso'?'+ ':'- ')+'$ '+fmt(Math.abs(m.monto_ars))+'</div>'):'';
+      const montoArsHtml=m.monto_ars?('<div class="caja-mov-monto '+(colorClass==='ingreso'?'pos':'neg')+'">'+(colorClass==='ingreso'?'+ ':'- ')+'$ '+fmt(Math.abs(m.monto_ars))+'</div>'+(recargoHtml||'')):'';
       const montoUsdHtml=m.monto_usd?('<div class="caja-mov-monto '+(colorClass==='ingreso'?'pos':'neg')+'" style="font-size:10px;">'+(colorClass==='ingreso'?'+ ':'- ')+'U$S '+fmt(Math.abs(m.monto_usd),2)+'</div>'):'';
       const delBtn=(m.origen==='manual'||m.origen==='banco_imp')&&!isReadOnly?('<button class="del-btn" onclick="del'+(m.origen==='manual'?'CajaMov':'MovBancario')+'(\''+m.rawId+'\')">✕</button>'):'';
       return '<div class="caja-mov-row'+(pagado?' pagado':'')+'">'+
@@ -3633,8 +3691,22 @@ function renderCaja(){
     const pagados=cuotas.filter(m=>!!vencimientosPagados[m.id+'_'+d.fecha]);
     return pagados.length<cuotas.length;
   }).length;
-  const pasadosHtml=cfPasados.length===0?'':
-    '<div class="caja-pasados-section">'+cfPasados.map((d,i)=>renderDia(d,i)).join('')+'</div>';
+  const pasadosHtml=cfPasados.length===0?'':`
+  <div style="margin-bottom:12px;">
+    <button class="caja-pasados-toggle" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.chevron').textContent=this.nextElementSibling.style.display==='none'?'▶':'▼';">
+      <span>📋 Historial — últimos ${_cajaDiasPasados} días (${cfPasados.length} días con actividad o vencimientos)</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <select onclick="event.stopPropagation()" onchange="_cajaDiasPasados=+this.value;renderTabContent();" style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg2);color:var(--text);">
+          <option value="15" ${_cajaDiasPasados===15?'selected':''}>15 días</option>
+          <option value="30" ${_cajaDiasPasados===30?'selected':''}>30 días</option>
+          <option value="60" ${_cajaDiasPasados===60?'selected':''}>60 días</option>
+          <option value="90" ${_cajaDiasPasados===90?'selected':''}>90 días</option>
+        </select>
+        <span class="chevron">▼</span>
+      </div>
+    </button>
+    <div class="caja-pasados-section" style="display:block;">${cfPasados.map((d,i)=>renderDia(d,i)).join('')}</div>
+  </div>`;
 
   const futurosHtml=cfFuturos.map((d,i)=>renderDia(d,i)).join('');
 
@@ -4121,30 +4193,38 @@ function editEgreso(modKey,key,si,field,val){
     }
   }
 
-  // Cambio de moneda: re-renderizar solo la fila (actualiza el placeholder y el total)
+  // Cambio de moneda: re-renderizar para actualizar el select de moneda visual
+  // y tipo_pago ya se maneja inline arriba
   if(field==='moneda'){
     const openIds=Array.from(document.querySelectorAll('.section-body.open')).map(el=>el.id);
     renderTabContent();
     openIds.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('open');});
     return;
   }
+  // tipo_pago ya fue manejado inline arriba — no re-renderizar
+  if(field==='tipo_pago') return;
 
   // Para monto/tn_soja/tn_maiz: actualizar solo la celda del total en el DOM
   // sin re-renderizar para no perder el foco del input
-  if(field==='monto'||field==='tn_soja'||field==='tn_maiz'){
+  if(field==='monto'||field==='tn_soja'||field==='tn_maiz'||field==='tipo_pago'){
     const item=mdata.subItems[si];
-    let totalArs=0;
-    if(item.moneda==='ars'){ totalArs=item.monto||0; }
-    else if(item.moneda==='usd'){ totalArs=(item.monto||0)*getTcFuturoMes(key); }
-    else if(item.moneda==='tn_soja'){ totalArs=(item.tn_soja||0)*getGrainPrice('soja',key).v*getTcMay(); }
-    else if(item.moneda==='tn_maiz'){ totalArs=(item.tn_maiz||0)*getGrainPrice('maiz',key).v*getTcMay(); }
+    let base=0;
+    if(item.moneda==='ars') base=item.monto||0;
+    else if(item.moneda==='usd') base=(item.monto||0)*getTcFuturoMes(key);
+    else if(item.moneda==='tn_soja') base=(item.tn_soja||0)*getGrainPrice('soja',key).v*getTcMay();
+    else if(item.moneda==='tn_maiz') base=(item.tn_maiz||0)*getGrainPrice('maiz',key).v*getTcMay();
+    const recargo=getRecargoPago(base, item.tipo_pago||'transferencia');
+    const totalArs=base+recargo;
+    // Actualizar celda total
     const totalCell=document.querySelector('[data-egreso-total="'+modKey+'_'+key+'_'+si+'"]');
     if(totalCell) totalCell.textContent='$ '+fmt(totalArs);
-    // También actualizar la celda de equivalencia ≈ ARS para moneda USD
+    // Actualizar celda desglose (≈ ARS o imp.cheque)
     const equivCell=document.querySelector('[data-egreso-equiv="'+modKey+'_'+key+'_'+si+'"]');
     if(equivCell){
-      const item2=mdata.subItems[si];
-      equivCell.textContent=item2.moneda==='usd'?'≈ $ '+fmt((+item2.monto||0)*getTcFuturoMes(key)):'';
+      if(recargo>0)
+        equivCell.innerHTML='<div style="font-size:9px;color:var(--amber);font-family:IBM Plex Mono,monospace;margin-top:2px;">+ $ '+fmt(recargo)+' imp.cheque</div>';
+      else
+        equivCell.innerHTML=item.moneda==='usd'?'<div style="font-size:9px;color:var(--text3);font-family:IBM Plex Mono,monospace;">≈ $ '+fmt(base)+'</div>':'';
     }
   }
   // Texto (concepto, obs): no re-renderizar, ya se guardó en memoria
@@ -4156,7 +4236,7 @@ function addEgreso(modKey,key,bodyId){
   const esArr=modKey==='arrendamientos';
   mdata.subItems.push(esArr
     ?{id:'n'+Date.now(),concepto:'Nuevo arrendamiento',tn_soja:0,tn_maiz:0,fecha_vto:''}
-    :{id:'n'+Date.now(),concepto:'Nuevo ítem',monto:0,moneda:'ars',fecha_vto:''});
+    :{id:'n'+Date.now(),concepto:'Nuevo ítem',monto:0,moneda:'ars',fecha_vto:'',tipo_pago:'transferencia'});
   scheduleFirestoreSave();
   // Re-render sin colapsar secciones abiertas
   const openIds=Array.from(document.querySelectorAll('.section-body.open')).map(el=>el.id);
