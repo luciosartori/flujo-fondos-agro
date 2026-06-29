@@ -3200,40 +3200,37 @@ function renderEgresosMod(){
       } else {
         subRows=mdata.subItems.map((s,si)=>{
           const tipoPago=s.tipo_pago||'transferencia';
-          const tipoPagoLabels={transferencia:'TRANSF.',echeq:'E-CHEQ',factura:'FACTURA',seguro:'SEGURO',tarjeta:'TARJETA',debito_auto:'DÉB.AUT.'};
+          const tipoPagoLabels={transferencia:'TRANSF.',echeq:'E-CHEQ',factura:'FACTURA',seguro:'SEGURO',tarjeta:'TARJETA',debito_auto:'DEB.AUT.'};
           const tipoPagoColors={echeq:'var(--amber)',seguro:'var(--blue)',tarjeta:'var(--blue)',debito_auto:'var(--blue)',transferencia:'var(--text3)',factura:'var(--text3)'};
           const tipoPagoBgs={echeq:'var(--amber-bg)',seguro:'var(--blue-bg)',tarjeta:'var(--blue-bg)',debito_auto:'var(--blue-bg)',transferencia:'var(--bg3)',factura:'var(--bg3)'};
           const montoBase=s.moneda==='usd'?(+s.monto||0)*getTcFuturoMes(curMk.key):(+s.monto||0);
           const recargo=tipoPago==='echeq'&&montoBase>0?montoBase*0.006:0;
           const totalConRecargo=montoBase+recargo;
-          const tipoBadge='<span style="font-size:8px;font-family:IBM Plex Mono,monospace;padding:1px 5px;border-radius:3px;background:'+tipoPagoBgs[tipoPago]+';color:'+tipoPagoColors[tipoPago]+';border:1px solid '+tipoPagoColors[tipoPago]+'40;white-space:nowrap;">'+tipoPagoLabels[tipoPago]+'</span>';
           const desglose=recargo>0
             ?'<div style="font-size:9px;color:var(--amber);font-family:IBM Plex Mono,monospace;margin-top:2px;">+ $ '+fmt(recargo)+' imp.cheque</div>'
-            :(s.moneda==='usd'?'<div style="font-size:9px;color:var(--text3);font-family:IBM Plex Mono,monospace;">≈ $ '+fmt(montoBase)+'</div>':'');
-          return \`<tr>
-          <td><input type="text" value="\${s.concepto||''}" \${isReadOnly?'disabled':''} onchange="editEgreso('\${modKey}','\${curMk.key}',\${si},'concepto',this.value)"></td>
-          <td>
-            <select style="font-size:10px;font-family:'IBM Plex Mono',monospace;padding:2px 5px;border:0.5px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);width:100%;" \${isReadOnly?'disabled':''} onchange="editEgreso('\${modKey}','\${curMk.key}',\${si},'tipo_pago',this.value)">
-              <option value="transferencia" \${tipoPago==='transferencia'?'selected':''}>Transferencia</option>
-              <option value="echeq" \${tipoPago==='echeq'?'selected':''}>E-Cheq (+0,6%)</option>
-              <option value="factura" \${tipoPago==='factura'?'selected':''}>Factura</option>
-              <option value="seguro" \${tipoPago==='seguro'?'selected':''}>Seguro</option>
-              <option value="tarjeta" \${tipoPago==='tarjeta'?'selected':''}>Tarjeta</option>
-              <option value="debito_auto" \${tipoPago==='debito_auto'?'selected':''}>Déb. automático</option>
-            </select>
-          </td>
-          <td>
-            <select style="font-size:11px;font-family:'IBM Plex Mono',monospace;padding:3px 6px;border:0.5px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);" \${isReadOnly?'disabled':''} onchange="editEgreso('\${modKey}','\${curMk.key}',\${si},'moneda',this.value)">
-              <option value="ars" \${(s.moneda||'ars')==='ars'?'selected':''}>ARS $</option>
-              <option value="usd" \${s.moneda==='usd'?'selected':''}>USD U$S</option>
-            </select>
-          </td>
-          <td><input type="number" step="0.01" value="\${s.monto||0}" \${isReadOnly?'disabled':''} onchange="editEgreso('\${modKey}','\${curMk.key}',\${si},'monto',this.value)"></td>
-          <td style="font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;" data-egreso-equiv="\${modKey}_\${curMk.key}_\${si}">\${desglose}</td>
-          <td style="font-family:'IBM Plex Mono',monospace;font-size:12px;" data-egreso-total="\${modKey}_\${curMk.key}_\${si}">$ \${fmt(totalConRecargo)}</td>
-          <td><input type="date" value="\${s.fecha_vto||''}" \${isReadOnly?'disabled':''} onchange="editEgreso('\${modKey}','\${curMk.key}',\${si},'fecha_vto',this.value)" class="cuota-fecha-input" title="Fecha exacta de vencimiento"></td>
-          <td>\${isReadOnly?'':\`<button class="del-btn" onclick="delEgreso('\${modKey}','\${curMk.key}',\${si})">✕</button>\`}</td>
-        </tr>\`;
+            :(s.moneda==='usd'?'<div style="font-size:9px;color:var(--text3);font-family:IBM Plex Mono,monospace;">&#8776; $ '+fmt(montoBase)+'</div>':'');
+          const d=isReadOnly?'disabled':'';
+          const mk=curMk.key; const mk2=modKey;
+          return '<tr>'
+            +'<td><input type="text" value="'+(s.concepto||'')+'" '+d+' onchange="editEgreso(\''+mk2+'\',\''+mk+'\','+si+',\'concepto\',this.value)"></td>'
+            +'<td><select style="font-size:10px;font-family:IBM Plex Mono,monospace;padding:2px 5px;border:0.5px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);width:100%;" '+d+' onchange="editEgreso(\''+mk2+'\',\''+mk+'\','+si+',\'tipo_pago\',this.value)">'
+            +'<option value="transferencia" '+(tipoPago==='transferencia'?'selected':'')+'>Transferencia</option>'
+            +'<option value="echeq" '+(tipoPago==='echeq'?'selected':'')+'>E-Cheq (+0,6%)</option>'
+            +'<option value="factura" '+(tipoPago==='factura'?'selected':'')+'>Factura</option>'
+            +'<option value="seguro" '+(tipoPago==='seguro'?'selected':'')+'>Seguro</option>'
+            +'<option value="tarjeta" '+(tipoPago==='tarjeta'?'selected':'')+'>Tarjeta</option>'
+            +'<option value="debito_auto" '+(tipoPago==='debito_auto'?'selected':'')+'>Deb. automatico</option>'
+            +'</select></td>'
+            +'<td><select style="font-size:11px;font-family:IBM Plex Mono,monospace;padding:3px 6px;border:0.5px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);" '+d+' onchange="editEgreso(\''+mk2+'\',\''+mk+'\','+si+',\'moneda\',this.value)">'
+            +'<option value="ars" '+((s.moneda||'ars')==='ars'?'selected':'')+'>ARS $</option>'
+            +'<option value="usd" '+(s.moneda==='usd'?'selected':'')+'>USD U$S</option>'
+            +'</select></td>'
+            +'<td><input type="number" step="0.01" value="'+(s.monto||0)+'" '+d+' oninput="editEgreso(\''+mk2+'\',\''+mk+'\','+si+',\'monto\',this.value)"></td>'
+            +'<td style="font-size:10px;color:var(--text3);font-family:IBM Plex Mono,monospace;" data-egreso-equiv="'+mk2+'_'+mk+'_'+si+'">'+desglose+'</td>'
+            +'<td style="font-family:IBM Plex Mono,monospace;font-size:12px;" data-egreso-total="'+mk2+'_'+mk+'_'+si+'">$ '+fmt(totalConRecargo)+'</td>'
+            +'<td><input type="date" value="'+(s.fecha_vto||'')+'" '+d+' onchange="editEgreso(\''+mk2+'\',\''+mk+'\','+si+',\'fecha_vto\',this.value)" class="cuota-fecha-input" title="Fecha exacta de vencimiento"></td>'
+            +(isReadOnly?'<td></td>':'<td><button class="del-btn" onclick="delEgreso(\''+mk2+'\',\''+mk+'\','+si+')">&#x2715;</button></td>')
+            +'</tr>';
         }).join('');
       }
     }
