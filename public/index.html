@@ -1989,6 +1989,13 @@ const API_TC  = "https://dolarapi.com/v1/dolares";
 // ============================================================
 const MONTHS=[];
 (()=>{let d=new Date(2026,4,1);const e=new Date(2030,5,1);while(d<=e){MONTHS.push({y:d.getFullYear(),m:d.getMonth(),key:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`});d.setMonth(d.getMonth()+1);}})();
+// Ubicar el mes actual dentro del rango — si hoy cae fuera del rango, usar el extremo más cercano
+const _hoyKey=(()=>{const t=new Date();return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}`;})();
+let _idxHoy=MONTHS.findIndex(mo=>mo.key===_hoyKey);
+if(_idxHoy<0){
+  const t=new Date();
+  _idxHoy = t < new Date(MONTHS[0].y,MONTHS[0].m,1) ? 0 : MONTHS.length-1;
+}
 const MN=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // Stock inicial — editable por el usuario
@@ -2005,7 +2012,7 @@ let grainLive={soja:{},maiz:{}};
 let grainOverride={soja:{},maiz:{}};
 let dolarFuturo={};
 let dataStatus={tc:'loading',granos:'loading',fin:'loading'};
-let currentMonthIdx=0,currentTab='mensual';
+let currentMonthIdx=_idxHoy,currentTab='mensual'; // arranca en el mes actual, no en el primero del rango
 let isReadOnly=false;
 let saveTimer=null;
 
@@ -2641,6 +2648,13 @@ function setTab(t){
   document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('active',el.getAttribute('onclick').includes(`'${t}'`)));
   renderTabContent();
   if(window._onTabRender) window._onTabRender();
+  if(t==='caja'){
+    // Llevar la vista al día de hoy dentro del flujo de caja
+    setTimeout(()=>{
+      const hoyEl=document.getElementById('caja-day-hoy');
+      if(hoyEl) hoyEl.scrollIntoView({behavior:'smooth',block:'start'});
+    },80);
+  }
 }
 function renderAll(){
   const flow=calcFlow();
@@ -3737,7 +3751,7 @@ function renderCaja(){
       <button class="caja-add-btn" onclick="addCajaMov('${dia.fecha}')">+ Agregar</button>
     </div>`;
 
-    return`<div class="caja-day">
+    return`<div class="caja-day"${dia.esHoy?' id="caja-day-hoy"':''}>
       <div class="${hCls}" onclick="toggleSection('${bodyId}')">
         <div class="caja-day-label">
           <span class="caja-semaforo ${semaforo}"></span>
