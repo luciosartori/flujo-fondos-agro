@@ -15,7 +15,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, getDocs }
+import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, getDocs, deleteField }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 const firebaseConfig = {
   apiKey: "AIzaSyCxz0S9LPbgoH9DuSdDGfj8axggj_iPcmE",
@@ -30,7 +30,7 @@ const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
 window._fb = { auth, db, doc, setDoc, getDoc, onSnapshot, collection,
-               getDocs, signInWithEmailAndPassword, signOut, onAuthStateChanged };
+               getDocs, signInWithEmailAndPassword, signOut, onAuthStateChanged, deleteField };
 onAuthStateChanged(auth, user => {
   window._currentUser = user;
   if(user){
@@ -2092,6 +2092,7 @@ let cajaMovimientos = [];
 let saldoBancos = {};    // {id: {nombre, saldoArs, saldoUsd, fechaSaldo}}
 let movBancarios = [];   // movimientos importados desde Excel de banco
 let vencimientosPagados = {}; // {pagoKey: {pagadoEn, pagadoPor}}
+let vencimientosPagadosBorrados = new Set(); // keys que se desmarcaron y deben eliminarse en Firestore con deleteField()
 
 // ============================================================
 // FIREBASE AUTH
@@ -2141,7 +2142,7 @@ function scheduleFirestoreSave(){
 async function saveToFirestore(){
   if(isReadOnly||!window._currentUser)return;
   try{
-    const {db,doc,setDoc}=window._fb;
+    const {db,doc,setDoc,deleteField}=window._fb;
     const payload={
       loanEdits,
       extraLoans,
@@ -2166,7 +2167,15 @@ async function saveToFirestore(){
       updatedAt: new Date().toISOString(),
       updatedBy: window._currentUser.email
     };
+    // Las keys de vencimientosPagados que se desmarcaron deben eliminarse explícitamente
+    // del documento remoto — merge:true NO borra subcampos de un mapa anidado por sí solo.
+    vencimientosPagadosBorrados.forEach(pagoKey=>{
+      payload['vencimientosPagados.'+pagoKey]=deleteField();
+    });
+    const keysBorradasEnviadas=new Set(vencimientosPagadosBorrados);
     await setDoc(doc(db,'flujo','datos'), payload, {merge: true});
+    // Limpiar el tracking solo de las keys que efectivamente se enviaron a borrar
+    keysBorradasEnviadas.forEach(k=>vencimientosPagadosBorrados.delete(k));
     setSaveStatus('saved');
     setTimeout(()=>setSaveStatus('idle'),3000);
   }catch(e){
@@ -2182,6 +2191,10 @@ window._loadFirestoreData = async function(){
 
     // Escuchar cambios en tiempo real (multi-usuario)
     onSnapshot(docRef,snap=>{
+      // Ignorar el eco del propio guardado local mientras hay escrituras pendientes de confirmar,
+      // así evitamos que el snapshot intermedio pise cambios que el usuario acaba de hacer
+      // (por ejemplo, desmarcar un pago) antes de que el servidor confirme el borrado.
+      if(snap.metadata.hasPendingWrites) return;
       // Si no existe el documento aún, NO guardar vacío — solo renderizar con defaults
       if(!snap.exists()){
         renderAll();
@@ -4092,11 +4105,13 @@ function toggleVencimientoPagado(pagoKey){
   if(!pagoKey)return;
   if(vencimientosPagados[pagoKey]){
     delete vencimientosPagados[pagoKey];
+    vencimientosPagadosBorrados.add(pagoKey); // marcar para deleteField() en Firestore
   }else{
     vencimientosPagados[pagoKey]={
       pagadoEn:new Date().toISOString(),
       pagadoPor:window._currentUser?window._currentUser.email:'anónimo'
     };
+    vencimientosPagadosBorrados.delete(pagoKey); // si se vuelve a marcar, ya no hay que borrarla
   }
   scheduleFirestoreSave();
   // Re-render preservando los días/secciones que estaban abiertos
