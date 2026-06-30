@@ -3403,7 +3403,7 @@ function calcCajaFlow(){
     movs.forEach(m=>{
       const sign=m.tipo==='ingreso'?1:-1;
       // Vencimientos de cuotas y egresos: solo afectan el saldo si están pagados
-      const esVencimiento = m.origen==='cuota' || m.origen==='egreso_vto';
+      const esVencimiento = m.origen==='cuota' || m.origen==='egreso_vto' || m.origen==='modulo' || (m.origen==='manual'&&m.tipo==='egreso_variable');
       if(esVencimiento){
         const pagoKey = m.id+'_'+dia.fecha;
         const pagado = !!vencimientosPagados[pagoKey];
@@ -3414,7 +3414,7 @@ function calcCajaFlow(){
     });
     saldoArs=r2(saldoArs+deltaArs);saldoUsd=r2(saldoUsd+deltaUsd);
     return{...dia,movs,saldoArs,saldoUsd,deltaArs,
-      hayVtos:movs.some(m=>m.origen==='cuota'),
+      hayVtos:movs.some(m=>m.origen==='cuota'||m.origen==='egreso_vto'||m.origen==='modulo'),
       hayIngresos:movs.some(m=>m.tipo==='ingreso'),
       necesitaVenta:saldoArs<0&&!movs.some(m=>m.tipo==='ingreso')};
   });
@@ -3557,7 +3557,10 @@ function renderCaja(){
     const rows=lista.map(m=>{
       const esCuota=m.origen==='cuota';
       const esEgresoVto=m.origen==='egreso_vto';
-      const esVencimiento=esCuota||esEgresoVto;
+      const esModulo=m.origen==='modulo';
+      const esManualEgreso=m.origen==='manual'&&m.tipo==='egreso_variable';
+      const esManualEgreso=m.origen==='manual'&&m.tipo==='egreso_variable';
+      const esVencimiento=esCuota||esEgresoVto||esModulo||esManualEgreso;
       const pagoKey=esVencimiento?(m.id+'_'+fecha):'';
       const pagado=esVencimiento&&!!vencimientosPagados[pagoKey];
       const pagoBtn=esVencimiento&&!isReadOnly
@@ -3566,7 +3569,7 @@ function renderCaja(){
       const pagadoBadge=pagado?'<span class="caja-pagado-badge">✅ PAGADO</span>'
         :(esVencimiento?'<span style="font-size:9px;font-family:IBM Plex Mono,monospace;padding:2px 6px;border-radius:4px;background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border);">⏳ PENDIENTE</span>':'');
       const tipoPagoLabels={transferencia:'TRANSF.',echeq:'E-CHEQ',factura:'FACTURA',seguro:'SEGURO',tarjeta:'TARJETA',debito_auto:'DÉB.AUT.'};
-      const tagLabel=esCuota?m.banco:(esEgresoVto?(tipoPagoLabels[m.tipo_pago]||m.banco):(m.origen==='venta_real'?'GRANO':(m.origen==='banco_imp'?m.banco:'MANUAL')));
+      const tagLabel=esCuota?m.banco:(esEgresoVto?(tipoPagoLabels[m.tipo_pago]||m.banco):(esModulo?(m.banco||'EGRESO'):(m.origen==='venta_real'?'GRANO':(m.origen==='banco_imp'?m.banco:'MANUAL'))));
       const recargoHtml=m.recargo>0?('<div style="font-size:9px;color:var(--amber);font-family:IBM Plex Mono,monospace;">+ $ '+fmt(m.recargo)+' imp.cheque</div>'):'';
       const obsHtml=m.obs?(' <span style="color:var(--text3);font-size:10px;">('+m.obs+')</span>'):'';
       const montoArsHtml=m.monto_ars?('<div class="caja-mov-monto '+(colorClass==='ingreso'?'pos':'neg')+'">'+(colorClass==='ingreso'?'+ ':'- ')+'$ '+fmt(Math.abs(m.monto_ars))+'</div>'+(recargoHtml||'')):'';
@@ -3599,14 +3602,15 @@ function renderCaja(){
     const bodyOpen=dia.esHoy||(dia.hayVtos&&!dia.esPasado&&idx<7)||(dia.esPasado&&dia.hayVtos);
 
     const movsEgresoFijo=dia.movs.filter(m=>m.origen==='cuota');
-    const movsEgresoVar=dia.movs.filter(m=>m.origen==='modulo'||(m.origen==='manual'&&m.tipo==='egreso_variable'));
+    const movsEgresoVar=dia.movs.filter(m=>m.origen==='modulo'||m.origen==='egreso_vto'||(m.origen==='manual'&&m.tipo==='egreso_variable'));
     const movsIngreso=dia.movs.filter(m=>m.tipo==='ingreso'&&m.origen!=='banco_imp');
     const movsBancoIng=dia.movs.filter(m=>m.origen==='banco_imp'&&m.tipo==='ingreso');
     const movsBancoEgr=dia.movs.filter(m=>m.origen==='banco_imp'&&m.tipo!=='ingreso');
 
-    // Calcular estado de pagos del día
-    const totalVtos=movsEgresoFijo.length;
-    const pagadosHoy=movsEgresoFijo.filter(m=>!!vencimientosPagados[`${m.id}_${dia.fecha}`]).length;
+    // Calcular estado de pagos del día (cuotas + egresos operativos)
+    const todosVtosDia=[...movsEgresoFijo,...movsEgresoVar.filter(m=>m.origen!=='manual')];
+    const totalVtos=todosVtosDia.length;
+    const pagadosHoy=todosVtosDia.filter(m=>!!vencimientosPagados[`${m.id}_${dia.fecha}`]).length;
     const todosPagados=totalVtos>0&&pagadosHoy===totalVtos;
 
     // Badge de vencimiento considerando pagados — sin backticks anidados
@@ -3684,9 +3688,9 @@ function renderCaja(){
 
   const vtosPendientes=cfPasados.filter(d=>{
     if(!d.hayVtos)return false;
-    const cuotas=d.movs.filter(m=>m.origen==='cuota');
-    const pagados=cuotas.filter(m=>!!vencimientosPagados[m.id+'_'+d.fecha]);
-    return pagados.length<cuotas.length;
+    const todosVtos=d.movs.filter(m=>m.origen==='cuota'||m.origen==='egreso_vto'||m.origen==='modulo');
+    const pagados=todosVtos.filter(m=>!!vencimientosPagados[m.id+'_'+d.fecha]);
+    return pagados.length<todosVtos.length;
   }).length;
   const pasadosHtml=cfPasados.length===0?'':`
   <div style="margin-bottom:12px;">
