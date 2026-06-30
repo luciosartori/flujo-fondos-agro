@@ -1492,9 +1492,33 @@ body {
 .import-confirm-btn:disabled{opacity:.4;cursor:not-allowed;}
 .import-banco-sel{font-family:'Geist',sans-serif;font-size:13px;padding:7px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg2);color:var(--text);margin-bottom:12px;width:100%;outline:none;}
 /* PAGOS CONFIRMADOS */
-.caja-pagar-btn{font-size:10px;font-family:'IBM Plex Mono',monospace;padding:3px 9px;border:1px solid var(--border2);border-radius:4px;cursor:pointer;background:var(--bg3);color:var(--text3);white-space:nowrap;transition:all .15s;flex-shrink:0;}
-.caja-pagar-btn:hover{background:var(--green-bg);border-color:var(--green);color:var(--green);}
-.caja-pagar-btn.ya-pagado{background:var(--green-bg);border-color:var(--green);color:var(--green);}
+.caja-pagar-btn{
+  font-size:10.5px;font-weight:700;font-family:'IBM Plex Mono',monospace;
+  padding:6px 12px;border-radius:6px;cursor:pointer;white-space:nowrap;
+  flex-shrink:0;letter-spacing:.02em;transition:transform .12s, box-shadow .12s, filter .12s;
+  border:none;
+}
+.caja-pagar-btn:active{transform:scale(.96);}
+.caja-pagar-btn.no-pagado{
+  background:#dc2626;
+  color:#fff;
+  box-shadow:0 0 0 1px #b91c1c, 0 2px 6px rgba(220,38,38,.45);
+}
+.caja-pagar-btn.no-pagado:hover{
+  background:#ef4444;
+  box-shadow:0 0 0 1px #b91c1c, 0 3px 10px rgba(220,38,38,.6);
+  filter:brightness(1.05);
+}
+.caja-pagar-btn.ya-pagado{
+  background:#16a34a;
+  color:#fff;
+  box-shadow:0 0 0 1px #15803d, 0 2px 6px rgba(22,163,74,.45);
+}
+.caja-pagar-btn.ya-pagado:hover{
+  background:#22c55e;
+  box-shadow:0 0 0 1px #15803d, 0 3px 10px rgba(22,163,74,.6);
+  filter:brightness(1.05);
+}
 .caja-mov-row.pagado .caja-mov-concepto{opacity:.6;}
 .caja-mov-row.pagado .caja-mov-concepto span:not(.caja-pagado-badge){text-decoration:line-through;}
 .caja-mov-row.pagado .caja-mov-monto{color:var(--text3)!important;}
@@ -3603,8 +3627,9 @@ function renderCaja(){
       const esVencimiento=esCuota||esEgresoVto||esModulo||esManualEgreso;
       const pagoKey=esVencimiento?(m.id+'_'+fecha):'';
       const pagado=esVencimiento&&!!vencimientosPagados[pagoKey];
+      const pagoKeyEsc=pagoKey.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
       const pagoBtn=esVencimiento&&!isReadOnly
-        ?'<button class="caja-pagar-btn'+(pagado?' ya-pagado':'')+'" onclick="toggleVencimientoPagado(\''+pagoKey+'\')">'+(pagado?'↩ Desmarcar':'✅ Pagado')+'</button>'
+        ?'<button class="caja-pagar-btn'+(pagado?' ya-pagado':' no-pagado')+'" data-pagokey="'+pagoKeyEsc+'" onclick="toggleVencimientoPagado(this.dataset.pagokey)">'+(pagado?'✓ PAGADO — Desmarcar':'⚠ PENDIENTE — Marcar pagado')+'</button>'
         :'';
       const pagadoBadge=pagado?'<span class="caja-pagado-badge">✅ PAGADO</span>'
         :(esVencimiento?'<span style="font-size:9px;font-family:IBM Plex Mono,monospace;padding:2px 6px;border-radius:4px;background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border);">⏳ PENDIENTE</span>':'');
@@ -4064,6 +4089,7 @@ function delMovBancario(id){
 
 function toggleVencimientoPagado(pagoKey){
   if(isReadOnly)return;
+  if(!pagoKey)return;
   if(vencimientosPagados[pagoKey]){
     delete vencimientosPagados[pagoKey];
   }else{
@@ -4073,7 +4099,10 @@ function toggleVencimientoPagado(pagoKey){
     };
   }
   scheduleFirestoreSave();
+  // Re-render preservando los días/secciones que estaban abiertos
+  const openIds=Array.from(document.querySelectorAll('.caja-day-body.open, .section-body.open')).map(el=>el.id);
   renderTabContent();
+  openIds.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('open');});
 }
 
 // ============================================================
