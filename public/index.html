@@ -37,7 +37,15 @@ onAuthStateChanged(auth, user => {
     document.getElementById('loginOverlay').style.display='none';
     document.getElementById('userInfo').textContent = user.email;
     document.getElementById('logoutBtn').style.display='inline-flex';
-    window._loadFirestoreData();
+    // Esperar a que el script principal defina _loadFirestoreData (puede tardar si el DOM aún no procesó el <script> no-módulo)
+    const tryLoad = () => {
+      if(typeof window._loadFirestoreData === 'function'){
+        window._loadFirestoreData();
+      } else {
+        setTimeout(tryLoad, 50);
+      }
+    };
+    tryLoad();
   } else {
     document.getElementById('loginOverlay').style.display='flex';
     document.getElementById('logoutBtn').style.display='none';
@@ -177,6 +185,9 @@ onAuthStateChanged(auth, user => {
 [data-theme="dark"] .flow-table tr.grandtotal td {
   background: var(--bg4) !important;
 }
+
+/* Dark mode — saldo columns */
+[data-theme="dark"] .saldo-col:first-child { border-right-color: var(--border) !important; }
 
 /* Dark mode — caja day header */
 [data-theme="dark"] .caja-day-header {
@@ -1256,7 +1267,7 @@ body {
   background: linear-gradient(90deg, var(--green-bg), var(--bg2));
   border-left: 3px solid var(--green);
 }
-.caja-day-header.deficit-dia .caja-day-saldo { color: var(--red)!important; }
+.caja-day-header.deficit-dia .saldo-col-value { color: var(--red)!important; }
 .caja-day-label {
   display: flex; align-items: center; gap: 10px;
   font-size: 13px; font-weight: 600;
@@ -1274,7 +1285,28 @@ body {
 .caja-badge.vto     { background: var(--red-bg);   color: var(--red);   border: 1px solid var(--red-border); }
 .caja-badge.ingreso { background: var(--green-bg);  color: var(--green); border: 1px solid var(--green-border); }
 .caja-badge.gasto   { background: var(--amber-bg);  color: var(--amber); border: 1px solid var(--amber-border); }
-.caja-day-saldo { font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; text-align: right; }
+.caja-day-saldo {
+  display: flex; align-items: stretch; gap: 0;
+  font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600;
+}
+.saldo-col {
+  display: flex; flex-direction: column; align-items: flex-end;
+  padding: 0 14px; min-width: 120px;
+}
+.saldo-col:first-child {
+  border-right: 1px solid var(--border);
+}
+.saldo-col-label {
+  font-size: 9px; font-weight: 600; font-family: 'IBM Plex Mono', monospace;
+  color: var(--text3); text-transform: uppercase; letter-spacing: .06em;
+  margin-bottom: 3px;
+}
+.saldo-col-value {
+  font-size: 14px; font-weight: 700; font-family: 'IBM Plex Mono', monospace; line-height: 1.2;
+}
+.saldo-col-sub {
+  font-size: 10px; color: var(--text3); margin-top: 1px;
+}
 .saldo-usd { font-size: 10px; color: var(--text3); margin-top: 1px; }
 .caja-day-body { display: none; padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg); }
 .caja-day-body.open { display: block; animation: fadeUp .25s ease; }
@@ -3391,32 +3423,40 @@ function calcCajaFlow(){
   const hoyStr=new Date().toISOString().split('T')[0];
   // Saldo inicial = suma de saldos base de todos los bancos
   const bancosIds=Object.keys(saldoBancos);
-  let saldoArs=bancosIds.reduce((acc,bid)=>{
+  const saldoBase=bancosIds.reduce((acc,bid)=>{
     const b=saldoBancos[bid];
     const extra=movBancarios.filter(m=>m.bancoId===bid&&m.fecha>=(b.fechaSaldo||hoyStr)&&m.fecha<=hoyStr).reduce((s,m)=>s+(+m.monto||0),0);
     return acc+(+b.saldoArs||0)+extra;
   },0)||cajaInicial.ars||0;
+  // Saldo REAL (solo pagados) y PROYECTADO (todos los egresos descontados)
+  let saldoArs=saldoBase;
+  let saldoArsProyectado=saldoBase;
   let saldoUsd=cajaInicial.usd||0;
   return dias.map(dia=>{
     const movs=getCajaMovsDia(dia.fecha);
     let deltaArs=0,deltaUsd=0;
+    let deltaArsProy=0;
     movs.forEach(m=>{
       const sign=m.tipo==='ingreso'?1:-1;
-      // Vencimientos de cuotas y egresos: solo afectan el saldo si están pagados
       const esVencimiento = m.origen==='cuota' || m.origen==='egreso_vto' || m.origen==='modulo' || (m.origen==='manual'&&m.tipo==='egreso_variable');
+      // Saldo proyectado: siempre descuenta todos los egresos
+      deltaArsProy+=sign*Math.abs(m.monto_ars||0);
+      // Saldo real: vencimientos solo si están pagados
       if(esVencimiento){
         const pagoKey = m.id+'_'+dia.fecha;
         const pagado = !!vencimientosPagados[pagoKey];
-        if(!pagado) return; // No pagado → no afecta el saldo
+        if(!pagado) return;
       }
       deltaArs+=sign*Math.abs(m.monto_ars||0);
       deltaUsd+=sign*Math.abs(m.monto_usd||0);
     });
-    saldoArs=r2(saldoArs+deltaArs);saldoUsd=r2(saldoUsd+deltaUsd);
-    return{...dia,movs,saldoArs,saldoUsd,deltaArs,
+    saldoArs=r2(saldoArs+deltaArs);
+    saldoUsd=r2(saldoUsd+deltaUsd);
+    saldoArsProyectado=r2(saldoArsProyectado+deltaArsProy);
+    return{...dia,movs,saldoArs,saldoUsd,saldoArsProyectado,deltaArs,
       hayVtos:movs.some(m=>m.origen==='cuota'||m.origen==='egreso_vto'||m.origen==='modulo'),
       hayIngresos:movs.some(m=>m.tipo==='ingreso'),
-      necesitaVenta:saldoArs<0&&!movs.some(m=>m.tipo==='ingreso')};
+      necesitaVenta:saldoArsProyectado<0&&!movs.some(m=>m.tipo==='ingreso')};
   });
 }
 
@@ -3539,7 +3579,8 @@ function renderCaja(){
       '<div class="saldo-card" style="flex:2;min-width:260px;">'+
         '<h5>RESUMEN 30 DÍAS</h5>'+
         '<div style="display:flex;gap:14px;font-family:IBM Plex Mono,monospace;font-size:11px;margin-top:5px;flex-wrap:wrap;">'+
-          '<span>Saldo ARS final: <b style="color:'+(last.saldoArs>=0?'var(--green)':'var(--red)')+'">$ '+fmt(last.saldoArs)+'</b></span>'+
+          '<span>Saldo real ARS: <b style="color:'+(last.saldoArs>=0?'var(--green)':'var(--red)')+'">$ '+fmt(last.saldoArs)+'</b></span>'+
+          '<span>Saldo proy. ARS: <b style="color:'+(last.saldoArsProyectado>=0?'var(--blue)':'var(--amber)')+'">$ '+fmt(last.saldoArsProyectado)+'</b></span>'+
           '<span>Saldo USD final: <b style="color:'+(last.saldoUsd>=0?'var(--green)':'var(--red)')+'">U$S '+fmt(last.saldoUsd,2)+'</b></span>'+
           '<span>Días con vto: <b>'+diasVto+'</b></span>'+
           '<span>Días saldo negativo: <b style="color:'+(diasDef>0?'var(--red)':'var(--green)')+'">'+diasDef+'</b></span>'+
@@ -3558,7 +3599,6 @@ function renderCaja(){
       const esCuota=m.origen==='cuota';
       const esEgresoVto=m.origen==='egreso_vto';
       const esModulo=m.origen==='modulo';
-      const esManualEgreso=m.origen==='manual'&&m.tipo==='egreso_variable';
       const esManualEgreso=m.origen==='manual'&&m.tipo==='egreso_variable';
       const esVencimiento=esCuota||esEgresoVto||esModulo||esManualEgreso;
       const pagoKey=esVencimiento?(m.id+'_'+fecha):'';
@@ -3597,7 +3637,7 @@ function renderCaja(){
   const renderDia=(dia,idx)=>{
     const label=`${DN[dia.d.getDay()]} ${dia.d.getDate()} ${MES[dia.d.getMonth()]}`;
     const tieneMovs=dia.movs.length>0;
-    const semaforo=dia.saldoArs<0?'rojo':dia.saldoArs<(cajaInicial.ars||0)*0.15?'warn':'ok';
+    const semaforo=dia.saldoArsProyectado<0?'rojo':dia.saldoArsProyectado<(cajaInicial.ars||0)*0.15?'warn':(dia.saldoArs!==dia.saldoArsProyectado?'warn':'ok');
     const bodyId=`cajabody_${dia.fecha}`;
     const bodyOpen=dia.esHoy||(dia.hayVtos&&!dia.esPasado&&idx<7)||(dia.esPasado&&dia.hayVtos);
 
@@ -3607,8 +3647,8 @@ function renderCaja(){
     const movsBancoIng=dia.movs.filter(m=>m.origen==='banco_imp'&&m.tipo==='ingreso');
     const movsBancoEgr=dia.movs.filter(m=>m.origen==='banco_imp'&&m.tipo!=='ingreso');
 
-    // Calcular estado de pagos del día (cuotas + egresos operativos)
-    const todosVtosDia=[...movsEgresoFijo,...movsEgresoVar.filter(m=>m.origen!=='manual')];
+    // Calcular estado de pagos del día (cuotas + egresos operativos + manuales egreso)
+    const todosVtosDia=[...movsEgresoFijo,...movsEgresoVar];
     const totalVtos=todosVtosDia.length;
     const pagadosHoy=todosVtosDia.filter(m=>!!vencimientosPagados[`${m.id}_${dia.fecha}`]).length;
     const todosPagados=totalVtos>0&&pagadosHoy===totalVtos;
@@ -3670,8 +3710,16 @@ function renderCaja(){
           </div>
         </div>
         <div class="caja-day-saldo">
-          <div style="color:${dia.saldoArs>=0?'var(--green)':'var(--red)'}">$ ${fmt(dia.saldoArs)}</div>
-          <div class="saldo-usd">U$S ${fmt(dia.saldoUsd,2)}</div>
+          <div class="saldo-col">
+            <div class="saldo-col-label">Proyectado</div>
+            <div class="saldo-col-value" style="color:${dia.saldoArsProyectado>=0?'var(--blue)':'var(--amber)'}">$ ${fmt(dia.saldoArsProyectado)}</div>
+            <div class="saldo-col-sub">todos los egresos</div>
+          </div>
+          <div class="saldo-col">
+            <div class="saldo-col-label">Saldo real</div>
+            <div class="saldo-col-value" style="color:${dia.saldoArs>=0?'var(--green)':'var(--red)'}">$ ${fmt(dia.saldoArs)}</div>
+            <div class="saldo-col-sub">U$S ${fmt(dia.saldoUsd,2)}</div>
+          </div>
         </div>
       </div>
       <div class="caja-day-body${bodyOpen?' open':''}" id="${bodyId}">
