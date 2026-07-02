@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Flujo de Fondos — Productor Agropecuario 2026–2030</title>
+<title>Flujo de Fondos — Productor Agropecuario</title>
 <link rel="manifest" href="data:application/json,{%22name%22:%22Flujo%20de%20Fondos%20Agro%22,%22short_name%22:%22FlujoAgro%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%23059669%22,%22theme_color%22:%22%23059669%22,%22icons%22:[{%22src%22:%22data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20512%20512'%3E%3Crect%20width%3D'512'%20height%3D'512'%20fill%3D'%23059669'%20rx%3D'80'%2F%3E%3Ctext%20x%3D'256'%20y%3D'360'%20font-size%3D'320'%20text-anchor%3D'middle'%20fill%3D'white'%3E%F0%9F%8C%BE%3C%2Ftext%3E%3C%2Fsvg%3E%22,%22sizes%22:%22512x512%22,%22type%22:%22image/svg+xml%22}]}">
 <meta name="theme-color" content="#059669">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1573,7 +1573,7 @@ body {
       <div class="login-brand-content">
         <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:rgba(255,255,255,.6);letter-spacing:.12em;text-transform:uppercase;margin-bottom:20px;" id="loginEyebrow">Flujo de Fondos Agropecuario</div>
         <h1 id="loginTitle">Gestión financiera para el campo argentino</h1>
-        <p id="loginSubtitle">Proyección de flujo de fondos 2026–2030 con precios en vivo de futuros de granos y tipos de cambio BNA.</p>
+        <p id="loginSubtitle">Proyección de flujo de fondos con precios en vivo de futuros de granos y tipos de cambio BNA.</p>
       </div>
     </div>
     <div class="login-form-side">
@@ -1645,7 +1645,7 @@ body {
     <div class="sidebar-logo">
       <div class="sl-name">Flujo de Fondos</div>
       <div class="sl-sub">PRODUCTOR AGROPECUARIO</div>
-      <div class="sl-badge">2026 — 2030</div>
+      <div class="sl-badge">2026 — <span id="dynEndYear"></span></div>
     </div>
 
     <!-- TC en sidebar — COLAPSABLE -->
@@ -1769,7 +1769,7 @@ body {
       <div class="topbar-left">
         <div>
           <div class="topbar-title" id="topbarTitle">Vista Mensual</div>
-          <div class="topbar-subtitle" id="topbarSub">SOJA 3.622,75 TN · MAÍZ 3.927 TN · 2026–2030</div>
+          <div class="topbar-subtitle" id="topbarSub">SOJA 3.622,75 TN · MAÍZ 3.927 TN · 2026–<span id="dynEndYear2"></span></div>
         </div>
       </div>
       <div class="topbar-right">
@@ -1988,7 +1988,43 @@ const API_TC  = "https://dolarapi.com/v1/dolares";
 // ESTADO
 // ============================================================
 const MONTHS=[];
-(()=>{let d=new Date(2026,4,1);const e=new Date(2030,5,1);while(d<=e){MONTHS.push({y:d.getFullYear(),m:d.getMonth(),key:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`});d.setMonth(d.getMonth()+1);}})();
+(()=>{
+  const start=new Date(2026,4,1); // Mayo 2026 fijo
+  // Fin dinámico: 12 meses a partir del mes actual, para siempre tener un año de proyección adelante
+  const end=(()=>{const t=new Date();t.setMonth(t.getMonth()+12);t.setDate(1);return t;})();
+  let d=new Date(start);
+  while(d<=end){
+    MONTHS.push({y:d.getFullYear(),m:d.getMonth(),key:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`});
+    d.setMonth(d.getMonth()+1);
+  }
+})();
+
+// Extiende MONTHS hasta cubrir la key dada (formato YYYY-MM), si todavía no existe.
+// Se llama al cargar datos desde Firestore y al editar fechas de cuotas/egresos.
+function extenderMONTHS(key){
+  if(!key||key.length<7)return;
+  const [y,m]=key.split('-').map(Number);
+  if(isNaN(y)||isNaN(m))return;
+  const last=MONTHS[MONTHS.length-1];
+  // Comparar: si la key ya está cubierta, nada que hacer
+  if(y<last.y||(y===last.y&&m-1<=last.m))return;
+  // Agregar meses desde el siguiente al último hasta cubrir la key + 1 mes de buffer
+  let d=new Date(last.y,last.m+1,1);
+  const target=new Date(y,m,1); // un mes después de la key pedida como buffer
+  while(d<=target){
+    const ky=d.getFullYear(),km=d.getMonth();
+    MONTHS.push({y:ky,m:km,key:`${ky}-${String(km+1).padStart(2,'0')}`});
+    d.setMonth(d.getMonth()+1);
+  }
+  // Reconstruir ventaOverrides para los meses nuevos (necesario para calcFlow)
+  MONTHS.forEach(({key:k})=>{if(!ventaOverrides[k])ventaOverrides[k]={soja:null,maiz:null};});
+  // Extender egresoModules para los meses nuevos
+  if(typeof egresoModules!=='undefined'){
+    Object.values(egresoModules).forEach(mod=>{
+      MONTHS.forEach(({key:k})=>{if(!mod.items.find(i=>i.key===k)){mod.items.push({key:k,subItems:[]});}});
+    });
+  }
+}
 // Ubicar el mes actual dentro del rango — si hoy cae fuera del rango, usar el extremo más cercano
 const _hoyKey=(()=>{const t=new Date();return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}`;})();
 let _idxHoy=MONTHS.findIndex(mo=>mo.key===_hoyKey);
@@ -2283,6 +2319,20 @@ window._loadFirestoreData = async function(){
       if(d.movBancarios && Array.isArray(d.movBancarios)) movBancarios = d.movBancarios;
       if(d.vencimientosPagados && typeof d.vencimientosPagados==='object') vencimientosPagados = d.vencimientosPagados;
       if(d.cuotaFechas) cuotaFechas = d.cuotaFechas;
+      // Extender MONTHS para cubrir cualquier fecha de cuota o egreso ya guardada
+      [...(d.extraLoans||[]),...LOANS].forEach(l=>{
+        const mesReal=cuotaFechas[l.id]?cuotaFechas[l.id].substring(0,7):(l.mes||'');
+        extenderMONTHS(mesReal);
+      });
+      if(d.egresos){
+        Object.values(d.egresos).forEach(mod=>{
+          Object.values(mod).forEach(subItems=>{
+            if(Array.isArray(subItems))subItems.forEach(s=>{
+              if(s.fecha_vto)extenderMONTHS(s.fecha_vto.substring(0,7));
+            });
+          });
+        });
+      }
       if(d.cajaMovimientos && Array.isArray(d.cajaMovimientos)) cajaMovimientos = d.cajaMovimientos;
 
       renderAll();
@@ -2485,6 +2535,47 @@ function getEgresoMod(key,modKey){
 }
 function getEgresoTotal(key){return Object.keys(egresoModules).reduce((a,k)=>a+getEgresoMod(key,k),0);}
 
+// Devuelve {usd, ars} de cuotas del mes: usd = monto_usd suma, ars = monto_ars + usd*tc
+function getLoanDesglose(key){
+  let usd=0,ars=0;
+  const agg=l=>{
+    const mesReal=cuotaFechas[l.id]?cuotaFechas[l.id].substring(0,7):l.mes;
+    if(mesReal!==key)return;
+    const e=loanEdits[l.id]||l;
+    const tc=getTcFuturoMes(mesReal);
+    usd+=e.monto_usd||0;
+    ars+=(e.monto_ars||0)+(e.monto_usd||0)*tc;
+  };
+  [...LOANS,...extraLoans].forEach(agg);
+  return {usd, ars};
+}
+// Devuelve {usd, ars} de egresos operativos del mes
+function getEgresoDesglose(key){
+  let usd=0,ars=0;
+  Object.keys(egresoModules).forEach(modKey=>{
+    const mdata=egresoModules[modKey].items.find(i=>i.key===key);
+    if(!mdata)return;
+    if(modKey==='arrendamientos'){
+      mdata.subItems.forEach(s=>{
+        const base=(+s.tn_soja||0)*getGrainPrice('soja',key).v*getTcMay()
+                 +(+s.tn_maiz||0)*getGrainPrice('maiz',key).v*getTcMay();
+        ars+=getMontoConRecargo(base,s.tipo_pago);
+      });
+    } else {
+      mdata.subItems.forEach(s=>{
+        if(s.moneda==='usd'){
+          const base=(+s.monto||0);
+          usd+=base;
+          ars+=getMontoConRecargo(base*getTcMin(),s.tipo_pago);
+        } else {
+          ars+=getMontoConRecargo(+s.monto||0,s.tipo_pago);
+        }
+      });
+    }
+  });
+  return {usd, ars};
+}
+
 // Redondear a 2 decimales para presentación
 function r2(n){return Math.round(n*100)/100;}
 // Redondear a 6 decimales para cálculos intermedios de toneladas (sin perder precisión)
@@ -2656,7 +2747,12 @@ function setTab(t){
     },80);
   }
 }
+function _updateDynEndYear(){
+  const lastY=MONTHS[MONTHS.length-1].y;
+  ['dynEndYear','dynEndYear2'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=lastY;});
+}
 function renderAll(){
+  _updateDynEndYear();
   const flow=calcFlow();
   renderStockBar(flow);renderAlertas(flow);renderSummary(flow);renderTabContent(flow);
 }
@@ -2710,14 +2806,25 @@ function renderAlertas(flow){
   }).join('');
 }
 function renderSummary(flow){
-  let totalUsd=0,totalEgr=0,totalNeto=0;
-  MONTHS.forEach(({key})=>{totalUsd+=flow[key].ingTotalUsd;totalEgr+=flow[key].egr;totalNeto+=flow[key].neto;});
+  let totalUsd=0,totalNeto=0;
+  MONTHS.forEach(({key})=>{totalUsd+=flow[key].ingTotalUsd;totalNeto+=flow[key].neto;});
   const sf=flow[MONTHS[MONTHS.length-1].key].acum;
   const dm=MONTHS.filter(({key})=>flow[key].deficit>0).length;
+
+  // Egresos agrupados por año
+  const byYear={};
+  MONTHS.forEach(({key,y})=>{
+    if(!byYear[y])byYear[y]=0;
+    byYear[y]+=flow[key].egr;
+  });
+  const egresosAnualesHtml=Object.entries(byYear).map(([y,egr])=>
+    `<div class="metric"><div class="ml">Egresos ${y}</div><div class="mv neg">$ ${fmt(egr)}</div></div>`
+  ).join('');
+
   document.getElementById('summaryGrid').innerHTML=`
     <div class="metric"><div class="ml">Ingresos (USD)</div><div class="mv">U$S ${fmt(totalUsd)}</div></div>
     <div class="metric"><div class="ml">Ingresos (ARS)</div><div class="mv pos">$ ${fmt(totalUsd*getTcMay())}</div></div>
-    <div class="metric"><div class="ml">Egresos (ARS)</div><div class="mv neg">$ ${fmt(totalEgr)}</div></div>
+    ${egresosAnualesHtml}
     <div class="metric"><div class="ml">Neto período</div><div class="mv ${totalNeto>=0?'pos':'neg'}">$ ${fmt(totalNeto)}</div></div>
     <div class="metric"><div class="ml">Saldo acumulado</div><div class="mv ${sf>=0?'pos':'neg'}">$ ${fmt(sf)}</div></div>
     <div class="metric"><div class="ml">Meses con déficit</div><div class="mv ${dm>0?'warn':''}">${dm}</div></div>`;
@@ -2759,6 +2866,29 @@ function renderMensual(flow){
   let egHtml='';
   Object.entries(egresoModules).forEach(([k,mod])=>{const mdata=mod.items.find(i=>i.key===mk.key);if(!mdata)return;mdata.subItems.forEach(s=>{if(+s.monto)egHtml+=`<tr><td>${mod.label}</td><td>${s.concepto}</td><td>$ ${fmt(+s.monto)}</td></tr>`;});});
   if(!egHtml)egHtml='<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:12px;">Sin egresos operativos cargados</td></tr>';
+  // Calcular desgloses antes del template para evitar backticks anidados
+  const _ld=getLoanDesglose(mk.key);
+  const _ed=getEgresoDesglose(mk.key);
+  const _egrUsd=_ld.usd+_ed.usd;
+  const _egrArs=_ld.ars+_ed.ars;
+  const _egrArsPuros=_egrArs-_egrUsd*getTcMin();
+  const _ingArs=f.ingTotalArs;
+  const _neto=f.neto;
+  const _acum=f.acum;
+  const _metricGrid=`
+    <div class="metric"><div class="ml">Ingresos mes</div><div class="mv pos">$ ${fmt(_ingArs)}</div></div>
+    <div class="metric" style="flex-direction:column;align-items:flex-start;gap:3px;">
+      <div class="ml">Egresos mes (USD)</div>
+      <div class="mv neg" style="font-size:14px;">U$S ${fmt(_egrUsd,2)}</div>
+      <div style="font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">equiv. $ ${fmt(_egrUsd*getTcMin())}</div>
+    </div>
+    <div class="metric" style="flex-direction:column;align-items:flex-start;gap:3px;">
+      <div class="ml">Egresos mes (ARS)</div>
+      <div class="mv neg" style="font-size:14px;">$ ${fmt(_egrArs)}</div>
+      <div style="font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">ARS puros: $ ${fmt(_egrArsPuros)}</div>
+    </div>
+    <div class="metric"><div class="ml">Neto mes</div><div class="mv ${_neto>=0?'pos':'neg'}">$ ${fmt(_neto)}</div></div>
+    <div class="metric"><div class="ml">Saldo acumulado</div><div class="mv ${_acum>=0?'pos':'neg'}">$ ${fmt(_acum)}</div></div>`;
   return `
   <div class="month-nav">
     <button onclick="prevMonth()">← PREV</button>
@@ -2767,12 +2897,8 @@ function renderMensual(flow){
     <select onchange="jumpMonth(this.value)">${MONTHS.map((m,i)=>`<option value="${i}" ${i===currentMonthIdx?'selected':''}>${MN[m.m].substring(0,3).toUpperCase()} ${m.y}</option>`).join('')}</select>
   </div>
   ${f.deficit>0?`<div class="alert-deficit" style="margin-bottom:12px;">▲ <div>Déficit de <b>$ ${fmt(f.deficit)}</b> — stock insuficiente.</div></div>`:''}
-  <div class="summary-grid" style="margin-bottom:13px;">
-    <div class="metric"><div class="ml">Ingresos mes (USD)</div><div class="mv pos">U$S ${fmt(f.ingTotalUsd,2)}</div></div>
-    <div class="metric"><div class="ml">Ingresos mes (ARS)</div><div class="mv pos">$ ${fmt(f.ingTotalArs)}</div></div>
-    <div class="metric"><div class="ml">Egresos mes</div><div class="mv neg">$ ${fmt(f.egr)}</div></div>
-    <div class="metric"><div class="ml">Neto mes</div><div class="mv ${f.neto>=0?'pos':'neg'}">$ ${fmt(f.neto)}</div></div>
-    <div class="metric"><div class="ml">Saldo acumulado</div><div class="mv ${f.acum>=0?'pos':'neg'}">$ ${fmt(f.acum)}</div></div>
+  <div class="summary-grid" style="margin-bottom:13px;" id="monthly-metrics">
+    ${_metricGrid}
   </div>
   <div class="section">
     <div class="section-header" onclick="toggleSection('ing-g')"><h3>VENTAS DE GRANOS</h3>
@@ -3254,7 +3380,7 @@ function renderCreditos(){
 
 function editCuotaFecha(id,val){
   if(isReadOnly)return;
-  if(val) cuotaFechas[id]=val;
+  if(val){cuotaFechas[id]=val;extenderMONTHS(val.substring(0,7));}
   else delete cuotaFechas[id];
   scheduleFirestoreSave();
   renderTabContent();
@@ -3336,7 +3462,7 @@ function renderEgresosMod(){
         </div>
         <table class="sub-table"><thead>${thead}</thead><tbody id="eg-body-${modKey}">${subRows}</tbody></table>
         ${isReadOnly?'':'<button class="add-row-btn" onclick="addEgreso(\''+modKey+'\',\''+curMk.key+'\',\''+bodyId+'\')">+ Agregar subconcepto</button>'}
-        <div class="year-mini">${[2026,2027,2028,2029,2030].map(y=>{const t=MONTHS.filter(mk=>mk.y===y).reduce((a,mk)=>a+getEgresoMod(mk.key,modKey),0);return `<div class="metric"><div class="ml">${y}</div><div class="mv" style="font-size:13px;">$ ${fmt(t)}</div></div>`;}).join('')}</div>
+        <div class="year-mini">${[...new Set(MONTHS.map(mk=>mk.y))].map(y=>{const t=MONTHS.filter(mk=>mk.y===y).reduce((a,mk)=>a+getEgresoMod(mk.key,modKey),0);return `<div class="metric"><div class="ml">${y}</div><div class="mv" style="font-size:13px;">$ ${fmt(t)}</div></div>`;}).join('')}</div>
       </div>
     </div>`;
   }).join('');
@@ -4248,6 +4374,7 @@ function editLoan(id,field,val){
   if(!loanEdits[id]){const l=LOANS.find(x=>x.id===id)||extraLoans.find(x=>x.id===id);if(l)loanEdits[id]={...l};}
   if(!loanEdits[id])loanEdits[id]={};
   loanEdits[id][field]=(field==='monto_ars'||field==='monto_usd')?(val===''?null:+val):val;
+  if(field==='mes'&&val)extenderMONTHS(val);
   scheduleFirestoreSave();
   // NO re-renderizar la tabla — solo actualizar la celda de total en el DOM
   // Así el input no pierde el foco mientras el usuario escribe
@@ -4264,7 +4391,7 @@ function editLoan(id,field,val){
 function addLoan(){
   if(isReadOnly)return;
   const id='ex'+Date.now();const l={id,banco:'',concepto:'',mes:MONTHS[currentMonthIdx].key,monto_ars:null,monto_usd:null};
-  extraLoans.push(l);loanEdits[id]={...l};scheduleFirestoreSave();setTab('creditos');
+  extenderMONTHS(l.mes);extraLoans.push(l);loanEdits[id]={...l};scheduleFirestoreSave();setTab('creditos');
 }
 function delLoan(id){
   if(isReadOnly)return;
@@ -4286,6 +4413,7 @@ function editEgreso(modKey,key,si,field,val){
 
   // Cambio de fecha: mover al mes de vencimiento y re-renderizar (necesario)
   if(field==='fecha_vto' && val){
+    extenderMONTHS(val.substring(0,7));
     const mesVto=val.substring(0,7);
     if(mesVto!==key){
       const itemMovido=mdata.subItems.splice(si,1)[0];
@@ -4756,7 +4884,7 @@ setInterval(fetchAllData,5*60*1000);
     try { localStorage.removeItem(LS_KEY); } catch(e){}
     applyLoginConfig({
       title:'Gestión financiera para el campo argentino',
-      subtitle:'Proyección de flujo de fondos 2026–2030 con precios en vivo de futuros de granos y tipos de cambio BNA.',
+      subtitle:'Proyección de flujo de fondos con precios en vivo de futuros de granos y tipos de cambio BNA.',
       eyebrow:'Flujo de Fondos Agropecuario', imgUrl:''
     });
     closeLoginEditor();
