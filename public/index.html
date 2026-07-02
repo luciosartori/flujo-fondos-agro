@@ -2319,6 +2319,30 @@ window._loadFirestoreData = async function(){
       if(d.movBancarios && Array.isArray(d.movBancarios)) movBancarios = d.movBancarios;
       if(d.vencimientosPagados && typeof d.vencimientosPagados==='object') vencimientosPagados = d.vencimientosPagados;
       if(d.cuotaFechas) cuotaFechas = d.cuotaFechas;
+      // Reconciliar espejos de movimientos manuales en módulo operativos:
+      // 1) Quitar espejos huérfanos (cuyo cajaMovId ya no existe en cajaMovimientos)
+      const _cmIds=new Set(cajaMovimientos.map(m=>m.id));
+      Object.values(egresoModules).forEach(mod=>{
+        mod.items.forEach(mdata=>{
+          mdata.subItems=mdata.subItems.filter(s=>!s.cajaMovId||_cmIds.has(s.cajaMovId));
+        });
+      });
+      // 2) Crear espejos faltantes para egresos manuales que no los tienen aún
+      cajaMovimientos.forEach(cm=>{
+        if(cm.tipo!=='egreso_variable'&&cm.tipo!=='egreso_fijo')return;
+        const mesKey=cm.fecha.substring(0,7);
+        extenderMONTHS(mesKey);
+        const _modKey=cm.moduloKey&&egresoModules[cm.moduloKey]?cm.moduloKey:'operativos';
+        const mdata=egresoModules[_modKey].items.find(i=>i.key===mesKey);
+        if(!mdata)return;
+        const yaExiste=mdata.subItems.some(s=>s.cajaMovId===cm.id);
+        if(!yaExiste){
+          const moneda=cm.monto_usd>0&&!cm.monto_ars?'usd':'ars';
+          const monto=moneda==='usd'?cm.monto_usd:cm.monto_ars;
+          mdata.subItems.push({id:'cm_eg_'+cm.id,concepto:cm.concepto,monto,moneda,
+            fecha_vto:cm.fecha,tipo_pago:'transferencia',cajaMovId:cm.id});
+        }
+      });
       // Extender MONTHS para cubrir cualquier fecha de cuota o egreso ya guardada
       [...(d.extraLoans||[]),...LOANS].forEach(l=>{
         const mesReal=cuotaFechas[l.id]?cuotaFechas[l.id].substring(0,7):(l.mes||'');
@@ -3864,11 +3888,16 @@ function renderCaja(){
        )+'</div>'
       :'';
 
+    // Opciones de módulos para el selector del formulario
+    const _modOpts=Object.entries(egresoModules).map(([k,m])=>`<option value="${k}">${m.label}</option>`).join('');
     const formMov=isReadOnly?'':`
-    <div class="caja-add-mov" style="margin-top:10px;padding-top:8px;border-top:0.5px solid var(--border);">
-      <select id="cajaTipo_${dia.fecha}" style="width:90px;">
+    <div class="caja-add-mov" style="margin-top:10px;padding-top:8px;border-top:0.5px solid var(--border);flex-wrap:wrap;gap:6px;">
+      <select id="cajaTipo_${dia.fecha}" style="width:90px;" onchange="toggleCajaModSel('${dia.fecha}',this.value)">
         <option value="egreso_variable">Egreso</option>
         <option value="ingreso">Ingreso</option>
+      </select>
+      <select id="cajaModulo_${dia.fecha}" title="Categoría del egreso" style="width:170px;font-size:11px;background:var(--bg3);color:var(--text2);border:1px solid var(--border2);border-radius:4px;padding:4px 6px;">
+        ${_modOpts}
       </select>
       <input type="text" id="cajaConc_${dia.fecha}" placeholder="Concepto" style="flex:1;min-width:120px;">
       <input type="number" id="cajaMtoArs_${dia.fecha}" placeholder="$ ARS" step="100" style="width:110px;">
@@ -4211,6 +4240,11 @@ function confirmImport(){
   alert('✅ '+added+' movimientos importados para '+saldoBancos[bancoId].nombre+'.');
 }
 
+function toggleCajaModSel(fecha, tipo){
+  const sel=document.getElementById('cajaModulo_'+fecha);
+  if(sel) sel.style.display=(tipo==='ingreso')?'none':'';
+}
+
 function addCajaMov(fecha){
   if(isReadOnly)return;
   const tipo=document.getElementById('cajaTipo_'+fecha).value;
@@ -4220,9 +4254,33 @@ function addCajaMov(fecha){
   const obs=document.getElementById('cajaObs_'+fecha).value.trim();
   if(!concepto){alert('Ingresá un concepto.');return;}
   if(!monto_ars&&!monto_usd){alert('Ingresá al menos un monto.');return;}
-  cajaMovimientos.push({id:'cm'+Date.now(),fecha,tipo,concepto,monto_ars,monto_usd,obs,
+  const modSel=document.getElementById('cajaModulo_'+fecha);
+  const moduloKey=(tipo!=='ingreso'&&modSel)?modSel.value:'operativos';
+  const cmId='cm'+Date.now();
+  cajaMovimientos.push({id:cmId,fecha,tipo,concepto,monto_ars,monto_usd,obs,moduloKey,
     cargadoPor:window._currentUser?window._currentUser.email:'',
     cargadoEn:new Date().toISOString()});
+
+  // Agregar ítem espejo en el módulo de egresos seleccionado
+  if(tipo==='egreso_variable'||tipo==='egreso_fijo'){
+    const mesKey=fecha.substring(0,7);
+    extenderMONTHS(mesKey);
+    const mod=egresoModules[moduloKey];
+    const mdata=mod?mod.items.find(i=>i.key===mesKey):null;
+    if(mdata){
+      const moneda=monto_usd>0&&!monto_ars?'usd':'ars';
+      const monto=moneda==='usd'?monto_usd:monto_ars;
+      mdata.subItems.push({
+        id:'cm_eg_'+cmId,
+        concepto,
+        monto,
+        moneda,
+        fecha_vto:fecha,
+        tipo_pago:'transferencia',
+        cajaMovId:cmId
+      });
+    }
+  }
   scheduleFirestoreSave();renderTabContent();
 }
 
@@ -4230,6 +4288,13 @@ function delCajaMov(id){
   if(isReadOnly)return;
   if(!confirm('¿Eliminar este movimiento?'))return;
   cajaMovimientos=cajaMovimientos.filter(m=>m.id!==id);
+  // Borrar también el ítem espejo en el módulo de egresos si existe
+  Object.values(egresoModules).forEach(mod=>{
+    mod.items.forEach(mdata=>{
+      const idx=mdata.subItems.findIndex(s=>s.cajaMovId===id);
+      if(idx>=0)mdata.subItems.splice(idx,1);
+    });
+  });
   scheduleFirestoreSave();renderTabContent();
 }
 
