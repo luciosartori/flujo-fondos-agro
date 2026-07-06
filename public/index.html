@@ -2706,9 +2706,9 @@ function calcFlow(){
     const ingTotalUsd = ingSojaUsd + ingMaizUsd;
     const ingTotalArs = ingTotalUsd * tcMay;
 
-    // Déficit real: solo si supera el umbral (elimina -0 y falsos déficits de float)
+    // Déficit operativo del mes (egresos > ingresos de granos ese mes)
     const diferencia = egr - ingTotalArs;
-    const deficit = diferencia > DEFICIT_THRESHOLD ? r2(diferencia) : 0;
+    const deficitOperativo = diferencia > DEFICIT_THRESHOLD ? r2(diferencia) : 0;
     const neto = r2(ingTotalArs - egr);
 
     // Descontar stock con precisión
@@ -2723,7 +2723,7 @@ function calcFlow(){
       ingTotalArs: r2(ingTotalArs),
       vendSoja: r6(vendSoja),
       vendMaiz: r6(vendMaiz),
-      pSoja, pMaiz, deficit,
+      pSoja, pMaiz, deficitOperativo, deficit:0,
       stockSojaPost: r2(stockSoja),
       stockMaizPost: r2(stockMaiz),
       neto,
@@ -2742,7 +2742,15 @@ function calcFlow(){
     return acc+(+b.saldoArs||0)+extra;
   },0)||(cajaInicial.ars||0);
   let acum=_saldoBase;
-  MONTHS.forEach(({key})=>{acum=r2(acum+result[key].neto); result[key].acum=acum;});
+  MONTHS.forEach(({key})=>{
+    acum=r2(acum+result[key].neto);
+    result[key].acum=acum;
+    // El déficit real solo existe si el saldo acumulado (incluyendo caja inicial) es negativo.
+    // Si el saldo en caja cubre el faltante operativo del mes, no hay déficit real.
+    result[key].deficit = acum < 0 ? r2(Math.abs(acum)) : 0;
+    // Guardamos deficitOperativo para referencia informativa (egresos > ingresos del mes)
+    // pero no lo usamos para alertas críticas
+  });
   return result;
 }
 
@@ -2834,9 +2842,14 @@ function renderAlertas(flow){
   if(!defs.length){document.getElementById('alertasDeficit').innerHTML='';return;}
   document.getElementById('alertasDeficit').innerHTML=defs.map(({key,y,m})=>{
     const f=flow[key];
-    const _cubierto=f.acum>=0;
-    const _nota=_cubierto?' <span style="font-size:10px;opacity:.75;">(cubierto por saldo de caja)</span>':'';
-    return `<div class="alert-deficit${_cubierto?' style="opacity:.6"':''}">▲ <div><b>${MN[m]} ${y}:</b> Déficit operativo de $ ${fmt(f.deficit)} — stock insuficiente. Soja: ${fmtTn(f.vendSoja)} · Maíz: ${fmtTn(f.vendMaiz)}.${_nota}</div></div>`;
+    // Solo alertar si hay déficit real (saldo acumulado negativo)
+    if(!f.deficit&&!f.deficitOperativo)return '';
+    if(f.deficit>0){
+      // Déficit real: el saldo en caja no alcanza
+      return `<div class="alert-deficit">▲ <div><b>${MN[m]} ${y}:</b> Déficit real de $ ${fmt(f.deficit)} — saldo insuficiente. Soja: ${fmtTn(f.vendSoja)} · Maíz: ${fmtTn(f.vendMaiz)}.</div></div>`;
+    }
+    // Solo déficit operativo (cubierto por caja): alerta informativa suavizada
+    return `<div class="alert-deficit" style="opacity:.55;border-color:var(--amber);background:var(--amber-bg);">ℹ <div><b>${MN[m]} ${y}:</b> Egresos superan ingresos de granos en $ ${fmt(f.deficitOperativo)} — cubierto por saldo de caja.</div></div>`;
   }).join('');
 }
 function renderSummary(flow){
@@ -2952,7 +2965,11 @@ function renderMensual(flow){
     <button onclick="nextMonth()">NEXT →</button>
     <select onchange="jumpMonth(this.value)">${MONTHS.map((m,i)=>`<option value="${i}" ${i===currentMonthIdx?'selected':''}>${MN[m.m].substring(0,3).toUpperCase()} ${m.y}</option>`).join('')}</select>
   </div>
-  ${f.deficit>0?`<div class="alert-deficit" style="margin-bottom:12px;${f.acum>=0?'opacity:.6':''}">▲ <div>Déficit operativo de <b>$ ${fmt(f.deficit)}</b> — stock insuficiente${f.acum>=0?' <span style="font-size:10px;opacity:.75;">(cubierto por saldo de caja)</span>':''}.</div></div>`:''}
+  ${f.deficit>0
+    ?`<div class="alert-deficit" style="margin-bottom:12px;">▲ <div>Déficit real de <b>$ ${fmt(f.deficit)}</b> — el saldo en caja es insuficiente para cubrir los egresos.</div></div>`
+    :f.deficitOperativo>0
+      ?`<div class="alert-deficit" style="margin-bottom:12px;opacity:.55;border-color:var(--amber);background:var(--amber-bg);">ℹ <div>Los egresos superan los ingresos de granos en <b>$ ${fmt(f.deficitOperativo)}</b> este mes — cubierto por el saldo de caja.</div></div>`
+      :''}
   <div class="summary-grid" style="margin-bottom:13px;" id="monthly-metrics">
     ${_metricGrid}
   </div>
