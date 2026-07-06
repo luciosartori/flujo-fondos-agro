@@ -2931,7 +2931,11 @@ function renderMensual(flow){
       }
       if(!montoArs&&!s.concepto)return;
       const monedaTag=s.moneda==='usd'?`<span style="font-size:9px;color:var(--text3);margin-left:4px;">U$S ${fmt(+s.monto||0,2)}</span>`:'';
-      egHtml+=`<tr><td style="padding-left:16px;color:var(--text3);font-size:11px;">${mod.label}</td><td>${s.concepto||'—'}${monedaTag}</td><td style="text-align:right;">$ ${fmt(montoArs)}</td></tr>`;
+      const esEcheq=s.tipo_pago==='echeq';
+      const montoBase=modKey==='arrendamientos'?montoArs/1.006:montoArs/(esEcheq?1.006:1);
+      const impCheque=esEcheq?r2(montoBase*0.006):0;
+      const echeqTag=esEcheq?`<span style="font-size:9px;color:var(--amber);margin-left:6px;font-family:'IBM Plex Mono',monospace;">E-CHQ +$ ${fmt(impCheque)}</span>`:'';
+      egHtml+=`<tr><td style="padding-left:16px;color:var(--text3);font-size:11px;">${mod.label}</td><td>${s.concepto||'—'}${monedaTag}${echeqTag}</td><td style="text-align:right;">$ ${fmt(montoArs)}</td></tr>`;
     });
   });
   if(!egHtml)egHtml='<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:12px;">Sin egresos operativos cargados</td></tr>';
@@ -2945,7 +2949,7 @@ function renderMensual(flow){
   const _neto=f.neto;
   const _acum=f.acum;
   const _metricGrid=`
-    <div class="metric"><div class="ml">Ingresos mes</div><div class="mv pos">$ ${fmt(_ingArs)}</div></div>
+    <div class="metric"><div class="ml">Ventas del mes</div><div class="mv pos">$ ${fmt(_ingArs)}</div></div>
     <div class="metric" style="flex-direction:column;align-items:flex-start;gap:3px;">
       <div class="ml">Egresos mes (USD)</div>
       <div class="mv neg" style="font-size:14px;">U$S ${fmt(_egrUsd,2)}</div>
@@ -2957,7 +2961,10 @@ function renderMensual(flow){
       <div style="font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">ARS puros: $ ${fmt(_egrArsPuros)}</div>
     </div>
     <div class="metric"><div class="ml">Neto mes</div><div class="mv ${_neto>=0?'pos':'neg'}">$ ${fmt(_neto)}</div></div>
-    <div class="metric"><div class="ml">Saldo acumulado</div><div class="mv ${_acum>=0?'pos':'neg'}">$ ${fmt(_acum)}</div></div>`;
+    <div class="metric" style="border:1px solid ${_acum>=0?'var(--green)':'var(--red)'};border-radius:8px;padding:10px 14px;">
+      <div class="ml" style="font-size:10px;letter-spacing:.06em;">SALDO DE CAJA AL CIERRE</div>
+      <div class="mv ${_acum>=0?'pos':'neg'}" style="font-size:20px;font-weight:800;">$ ${fmt(_acum)}</div>
+    </div>`;
   return `
   <div class="month-nav">
     <button onclick="prevMonth()">← PREV</button>
