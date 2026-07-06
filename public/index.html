@@ -2665,36 +2665,9 @@ function calcFlow(){
       vendSoja = Math.min(ovS!==null?+ovS:0, stockSoja);
       vendMaiz = Math.min(ovM!==null?+ovM:0, stockMaiz);
 
-    } else if(egr>0){
-      // ── MOTOR AUTOMÁTICO CON COBERTURA EXACTA ──
-      // 1. Determinar orden: primero el grano de mejor precio ARS/tn
-      const arsSoja = pSoja * tcMay;
-      const arsMaiz = pMaiz * tcMay;
-      const primero  = arsSoja >= arsMaiz ? 'soja' : 'maiz';
-      const segundo  = primero === 'soja'  ? 'maiz' : 'soja';
-      const pP  = primero==='soja' ? pSoja  : pMaiz;
-      const pS  = segundo==='soja' ? pSoja  : pMaiz;
-      const stP = primero==='soja' ? stockSoja : stockMaiz;
-      const stS = segundo==='soja' ? stockSoja : stockMaiz;
-
-      // 2. Calcular tn del grano principal con precisión completa
-      let tnP = calcTnNecesarias(egr, pP, tcMay, stP);
-      // Ajustar si hay residuo de punto flotante
-      tnP = ajustarTnSiNecesario(tnP, pP, tcMay, stP, egr);
-
-      const cubiertoPorP = tnP * pP * tcMay;
-      let faltante = egr - cubiertoPorP;
-
-      // 3. Si el grano principal no alcanzó (agotó stock), usar el segundo
-      let tnS = 0;
-      if(faltante > DEFICIT_THRESHOLD && stS > 0){
-        tnS = calcTnNecesarias(faltante, pS, tcMay, stS);
-        tnS = ajustarTnSiNecesario(tnS, pS, tcMay, stS, faltante);
-      }
-
-      if(primero==='soja'){vendSoja=tnP; vendMaiz=tnS;}
-      else{vendMaiz=tnP; vendSoja=tnS;}
     }
+    // Sin motor automático: si no hay venta real ni override, las ventas quedan en 0
+    // y el déficit se calcula como puro egreso sin ingreso de granos.
 
     // Calcular ingresos — precio real si hay venta confirmada, sino precio de mercado
     const ingSojaUsd = tieneVentasReales
@@ -2711,7 +2684,29 @@ function calcFlow(){
     const deficitOperativo = diferencia > DEFICIT_THRESHOLD ? r2(diferencia) : 0;
     const neto = r2(ingTotalArs - egr);
 
-    // Descontar stock con precisión
+    // Calcular sugerencia de venta si hay déficit operativo y no hay ventas cargadas
+    let sugSoja=0, sugMaiz=0;
+    if(!tieneVentasReales && ovS===null && ovM===null && egr>0){
+      // Sugerir cuánto vender para cubrir los egresos — primero el grano de mejor precio
+      const arsSoja=pSoja*tcMay, arsMaiz=pMaiz*tcMay;
+      const primero=arsSoja>=arsMaiz?'soja':'maiz';
+      const segundo=primero==='soja'?'maiz':'soja';
+      const pP=primero==='soja'?pSoja:pMaiz, pS=segundo==='soja'?pSoja:pMaiz;
+      const stP=primero==='soja'?stockSoja:stockMaiz, stS=segundo==='soja'?stockSoja:stockMaiz;
+      let tnP=calcTnNecesarias(egr,pP,tcMay,stP);
+      tnP=ajustarTnSiNecesario(tnP,pP,tcMay,stP,egr);
+      const cubierto=tnP*pP*tcMay;
+      let faltante=egr-cubierto;
+      let tnS=0;
+      if(faltante>DEFICIT_THRESHOLD&&stS>0){
+        tnS=calcTnNecesarias(faltante,pS,tcMay,stS);
+        tnS=ajustarTnSiNecesario(tnS,pS,tcMay,stS,faltante);
+      }
+      if(primero==='soja'){sugSoja=tnP;sugMaiz=tnS;}
+      else{sugMaiz=tnP;sugSoja=tnS;}
+    }
+
+    // Descontar stock solo por ventas reales u override (no por sugerencias)
     stockSoja = Math.max(0, stockSoja - vendSoja);
     stockMaiz = Math.max(0, stockMaiz - vendMaiz);
 
@@ -2723,11 +2718,13 @@ function calcFlow(){
       ingTotalArs: r2(ingTotalArs),
       vendSoja: r6(vendSoja),
       vendMaiz: r6(vendMaiz),
+      sugSoja: r6(sugSoja),   // sugerencia sin impacto en el flujo
+      sugMaiz: r6(sugMaiz),
       pSoja, pMaiz, deficitOperativo, deficit:0,
       stockSojaPost: r2(stockSoja),
       stockMaizPost: r2(stockMaiz),
       neto,
-      modoAuto: !tieneVentasReales && ovS===null && ovM===null,
+      modoAuto: false,
       esReal: tieneVentasReales
     };
   });
@@ -2982,19 +2979,28 @@ function renderMensual(flow){
   </div>
   <div class="section">
     <div class="section-header" onclick="toggleSection('ing-g')"><h3>VENTAS DE GRANOS</h3>
-      <div class="stotals"><span>U$S ${fmt(f.ingTotalUsd,2)} — $ ${fmt(f.ingTotalArs)}</span><span class="badge ${f.modoAuto?'auto-mode':'manual-mode'}">${f.modoAuto?'AUTO':'MANUAL'}</span></div></div>
+      <div class="stotals"><span>U$S ${fmt(f.ingTotalUsd,2)} — $ ${fmt(f.ingTotalArs)}</span><span class="badge ${f.esReal?'manual-mode':'auto-mode'}">${f.esReal?'REAL':f.ingTotalUsd>0?'MANUAL':'SIN VENTAS'}</span></div></div>
     <div class="section-body open" id="ing-g">
-      <div class="info-note">TC mayorista BNA en vivo ($ ${fmt(getTcMay(),2)}). Motor vende primero el grano de mayor precio ARS/tn.</div>
+      <div class="info-note">TC mayorista BNA en vivo ($ ${fmt(getTcMay(),2)}). Solo se computan ventas confirmadas — las sugerencias no afectan el flujo.</div>
+      ${(f.sugSoja>0||f.sugMaiz>0)?`<div style="margin-bottom:10px;padding:10px 14px;border-radius:7px;background:var(--amber-bg);border:1px solid var(--amber);font-family:'IBM Plex Mono',monospace;font-size:12px;">
+        💡 <b>Sugerencia para cubrir egresos de $ ${fmt(f.egr)}:</b>
+        ${f.sugSoja>0?`Vender <b>${fmt(f.sugSoja,2)} tn de SOJA</b> (≈ U$S ${fmt(f.sugSoja*pSinfo.v,2)} · $ ${fmt(f.sugSoja*pSinfo.v*getTcMay())})`:''}
+        ${f.sugSoja>0&&f.sugMaiz>0?' + ':''}
+        ${f.sugMaiz>0?`<b>${fmt(f.sugMaiz,2)} tn de MAÍZ</b> (≈ U$S ${fmt(f.sugMaiz*pMinfo.v,2)} · $ ${fmt(f.sugMaiz*pMinfo.v*getTcMay())})`:''}
+        <button onclick="openModalVenta('${mk.key}')" style="margin-left:12px;padding:3px 10px;border-radius:4px;background:var(--amber);color:#000;border:none;cursor:pointer;font-weight:700;font-size:11px;">+ Registrar venta</button>
+      </div>`:''}
       <div ${roMask()}><table class="sub-table">
-        <tr><th>Grano</th><th>Stock pre-venta</th><th>U$S/tn</th><th>Fuente</th><th>Tn auto</th><th>Tn manual</th><th>Total USD</th><th>Total ARS</th></tr>
+        <tr><th>Grano</th><th>Stock disponible</th><th>U$S/tn</th><th>Fuente</th><th>Tn vendidas</th><th>Tn manual</th><th>Total USD</th><th>Total ARS</th></tr>
         <tr><td><b>SOJA</b></td><td>${fmt(f.stockSojaPost+f.vendSoja,2)} tn</td>
           <td><input class="ov-input" type="number" step="0.01" value="${pSinfo.v}" onchange="setPriceOv('${mk.key}','soja',this.value)"></td>
-          <td>${srcBadge(pSinfo.src)}</td><td>${fmtTn(f.vendSoja)}</td>
+          <td>${srcBadge(pSinfo.src)}</td>
+          <td style="color:${f.vendSoja>0?'var(--green)':'var(--text3)'};">${f.vendSoja>0?fmtTn(f.vendSoja):'—'}</td>
           <td><input class="ov-input" type="number" step="0.01" min="0" placeholder="—" value="${ovS!==null?ovS:''}" onchange="setVentaOv('${mk.key}','soja',this.value)"></td>
           <td>U$S ${fmt(f.ingSojaUsd,2)}</td><td>$ ${fmt(f.ingSojaUsd*getTcMay())}</td></tr>
         <tr><td><b>MAÍZ</b></td><td>${fmt(f.stockMaizPost+f.vendMaiz,2)} tn</td>
           <td><input class="ov-input" type="number" step="0.01" value="${pMinfo.v}" onchange="setPriceOv('${mk.key}','maiz',this.value)"></td>
-          <td>${srcBadge(pMinfo.src)}</td><td>${fmtTn(f.vendMaiz)}</td>
+          <td>${srcBadge(pMinfo.src)}</td>
+          <td style="color:${f.vendMaiz>0?'var(--green)':'var(--text3)'};">${f.vendMaiz>0?fmtTn(f.vendMaiz):'—'}</td>
           <td><input class="ov-input" type="number" step="0.01" min="0" placeholder="—" value="${ovM!==null?ovM:''}" onchange="setVentaOv('${mk.key}','maiz',this.value)"></td>
           <td>U$S ${fmt(f.ingMaizUsd,2)}</td><td>$ ${fmt(f.ingMaizUsd*getTcMay())}</td></tr>
       </table></div>
