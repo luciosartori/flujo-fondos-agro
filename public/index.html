@@ -2732,8 +2732,16 @@ function calcFlow(){
     };
   });
 
-  // Saldo acumulado
-  let acum=0;
+  // Saldo acumulado — arranca desde el saldo real de bancos (igual que calcCajaFlow)
+  // para que Vista Mensual, Tabla de Flujo y Flujo de Caja coincidan
+  const _hoyStrFlow=new Date().toISOString().split('T')[0];
+  const _bancosIds=Object.keys(saldoBancos);
+  const _saldoBase=_bancosIds.reduce((acc,bid)=>{
+    const b=saldoBancos[bid];
+    const extra=movBancarios.filter(m=>m.bancoId===bid&&m.fecha>=(b.fechaSaldo||_hoyStrFlow)&&m.fecha<=_hoyStrFlow).reduce((s,m)=>s+(+m.monto||0),0);
+    return acc+(+b.saldoArs||0)+extra;
+  },0)||(cajaInicial.ars||0);
+  let acum=_saldoBase;
   MONTHS.forEach(({key})=>{acum=r2(acum+result[key].neto); result[key].acum=acum;});
   return result;
 }
@@ -2826,7 +2834,9 @@ function renderAlertas(flow){
   if(!defs.length){document.getElementById('alertasDeficit').innerHTML='';return;}
   document.getElementById('alertasDeficit').innerHTML=defs.map(({key,y,m})=>{
     const f=flow[key];
-    return `<div class="alert-deficit">▲ <div><b>${MN[m]} ${y}:</b> Déficit de $ ${fmt(f.deficit)} — stock insuficiente. Soja: ${fmtTn(f.vendSoja)} · Maíz: ${fmtTn(f.vendMaiz)}.</div></div>`;
+    const _cubierto=f.acum>=0;
+    const _nota=_cubierto?' <span style="font-size:10px;opacity:.75;">(cubierto por saldo de caja)</span>':'';
+    return `<div class="alert-deficit${_cubierto?' style="opacity:.6"':''}">▲ <div><b>${MN[m]} ${y}:</b> Déficit operativo de $ ${fmt(f.deficit)} — stock insuficiente. Soja: ${fmtTn(f.vendSoja)} · Maíz: ${fmtTn(f.vendMaiz)}.${_nota}</div></div>`;
   }).join('');
 }
 function renderSummary(flow){
@@ -2920,7 +2930,7 @@ function renderMensual(flow){
     <button onclick="nextMonth()">NEXT →</button>
     <select onchange="jumpMonth(this.value)">${MONTHS.map((m,i)=>`<option value="${i}" ${i===currentMonthIdx?'selected':''}>${MN[m.m].substring(0,3).toUpperCase()} ${m.y}</option>`).join('')}</select>
   </div>
-  ${f.deficit>0?`<div class="alert-deficit" style="margin-bottom:12px;">▲ <div>Déficit de <b>$ ${fmt(f.deficit)}</b> — stock insuficiente.</div></div>`:''}
+  ${f.deficit>0?`<div class="alert-deficit" style="margin-bottom:12px;${f.acum>=0?'opacity:.6':''}">▲ <div>Déficit operativo de <b>$ ${fmt(f.deficit)}</b> — stock insuficiente${f.acum>=0?' <span style="font-size:10px;opacity:.75;">(cubierto por saldo de caja)</span>':''}.</div></div>`:''}
   <div class="summary-grid" style="margin-bottom:13px;" id="monthly-metrics">
     ${_metricGrid}
   </div>
