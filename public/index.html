@@ -2559,6 +2559,29 @@ function getEgresoMod(key,modKey){
 }
 function getEgresoTotal(key){return Object.keys(egresoModules).reduce((a,k)=>a+getEgresoMod(key,k),0);}
 
+// Suma neta de movimientos manuales del flujo de caja para un mes dado,
+// excluyendo los que ya tienen espejo en egresoModules (cajaMovId presente en algún subItem)
+// para evitar doble conteo.
+function getCajaMovNeto(key){
+  // Armar set de cajaMovIds que ya están espejados en egresoModules
+  const espejados=new Set();
+  Object.values(egresoModules).forEach(mod=>{
+    mod.items.forEach(mdata=>{
+      mdata.subItems.forEach(s=>{if(s.cajaMovId)espejados.add(s.cajaMovId);});
+    });
+  });
+  let egr=0, ing=0;
+  cajaMovimientos.filter(m=>m.fecha&&m.fecha.substring(0,7)===key).forEach(m=>{
+    if(m.tipo==='ingreso'){
+      ing+=(+m.monto_ars||0)+(+m.monto_usd||0)*getTcMay();
+    } else if(!espejados.has(m.id)){
+      // egreso manual sin espejo (legacy antes del fix)
+      egr+=(+m.monto_ars||0)+(+m.monto_usd||0)*getTcMin();
+    }
+  });
+  return {egr, ing};
+}
+
 // Devuelve {usd, ars} de cuotas del mes: usd = monto_usd suma, ars = monto_ars + usd*tc
 function getLoanDesglose(key){
   let usd=0,ars=0;
@@ -2641,7 +2664,9 @@ function calcFlow(){
 
   const result={};
   MONTHS.forEach(({key})=>{
-    const egr = getLoanTotal(key) + getEgresoTotal(key);
+    const _cajaNeto = getCajaMovNeto(key);
+    const egr = getLoanTotal(key) + getEgresoTotal(key) + _cajaNeto.egr;
+    const ingCajaManual = _cajaNeto.ing; // ingresos manuales del flujo de caja
     const pSoja = getGrainPrice('soja',key).v;
     const pMaiz = getGrainPrice('maiz',key).v;
 
@@ -2677,7 +2702,7 @@ function calcFlow(){
       ? vrMaizMes.reduce((a,v)=>(+v.toneladas||0)*(+v.precio_usd||pMaiz)+a, 0)
       : vendMaiz * pMaiz;
     const ingTotalUsd = ingSojaUsd + ingMaizUsd;
-    const ingTotalArs = ingTotalUsd * tcMay;
+    const ingTotalArs = ingTotalUsd * tcMay + ingCajaManual;
 
     // Déficit operativo del mes (egresos > ingresos de granos ese mes)
     const diferencia = egr - ingTotalArs;
@@ -3059,6 +3084,7 @@ function renderFlujoTabla(flow){
   addRow('Gastos de comercialización',k=>getEgresoMod(k,'comercializacion'));
   addRow('Arrendamientos',k=>getEgresoMod(k,'arrendamientos'));
   addRow('Gastos de estructura',k=>getEgresoMod(k,'estructura'));
+  addRow('Movimientos manuales caja (leg.)',k=>getCajaMovNeto(k).egr);
   addRow('TOTAL EGRESOS',k=>flow[k].egr,'subtotal neg-total');
   addRow('NETO MES',k=>flow[k].neto,'grandtotal',true);
   addRow('SALDO ACUMULADO',k=>flow[k].acum,'grandtotal',true);
